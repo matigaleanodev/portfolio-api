@@ -19,6 +19,45 @@ API backend para el formulario de contacto del portfolio personal.
 
 ## 🚀 Endpoints
 
+## 📂 Proyectos
+
+La API expone un endpoint público de solo lectura para obtener los proyectos que se muestran en el portfolio.
+
+### `GET /api/projects`
+
+Devuelve la lista completa de proyectos, ordenados según el campo `order`.
+
+- Endpoint público
+- Sin autenticación
+- Solo lectura
+- Datos obtenidos desde MongoDB Atlas
+
+Ejemplo de respuesta:
+
+```json
+[
+  {
+    "name": "Foodly Notes",
+    "image": "/assets/foodly-notes.webp",
+    "description": "Foodly Notes es una aplicación de recetas pensada como producto real para el uso cotidiano...",
+    "technologies": ["Angular", "Ionic", "NestJS", "MongoDB"],
+    "links": [
+      {
+        "id": "frontend",
+        "name": "Repositorio Frontend",
+        "icon": "code",
+        "color": "primary",
+        "url": "https://github.com/matigaleanodev/foodly-notes"
+      }
+    ],
+    "highlight": true,
+    "order": 1
+  }
+]
+```
+
+Este endpoint está pensado para ser consumido directamente por el frontend del portfolio, utilizando un modelo de datos estable y sin mutaciones.
+
 ### Contacto (implementado)
 
 `POST /api/contact`
@@ -48,6 +87,8 @@ Respuesta esperada:
 
 Crear un archivo `.env` basado en `.env.example`:
 
+-`MONGO_URI`: `mongodb+srv://<USER>:<PASSWORD>@portfolio-cluster.mongodb.net/portfolio`
+
 - `RESEND_API_KEY`: API key de Resend
 - `CONTACT_FROM_EMAIL`: email “from” (dominio verificado)
 - `CONTACT_TO_EMAIL`: email destino (tu inbox)
@@ -74,11 +115,6 @@ npm test
 ## 🗺️ Roadmap (todavía no implementado)
 
 > Estos endpoints/módulos están **planificados**, pero **no existen aún** en el código.
-
-### Proyectos (planificado)
-
-- `GET /api/projects`
-- `GET /api/projects/:id`
 
 ### Chatbot (planificado)
 
