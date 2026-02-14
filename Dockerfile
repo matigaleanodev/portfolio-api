@@ -1,10 +1,12 @@
 FROM node:22-alpine3.20
 
+RUN apk add --no-cache ca-certificates
+
 WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci
+RUN npm ci --omit=dev
 
 COPY . .
 
