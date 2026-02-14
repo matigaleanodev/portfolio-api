@@ -1,3 +1,15 @@
+FROM node:22-alpine3.20 AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci
+
+COPY . .
+
+RUN npm run build
+
 FROM node:22-alpine3.20
 
 RUN apk add --no-cache ca-certificates
@@ -8,9 +20,7 @@ COPY package*.json ./
 
 RUN npm ci --omit=dev
 
-COPY . .
-
-RUN npm run build
+COPY --from=builder /app/dist ./dist
 
 ENV NODE_ENV=production
 
