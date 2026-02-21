@@ -4,7 +4,15 @@ import { ContactService } from './contact.service';
 import { ContactDto } from './contact.dto';
 import { Resend } from 'resend';
 
-const emailsSendMock = jest.fn();
+type EmailSendArgs = {
+  from: string;
+  to: string;
+  subject: string;
+  text: string;
+};
+
+const emailsSendMock: jest.MockedFunction<(args: EmailSendArgs) => unknown> =
+  jest.fn();
 
 jest.mock('resend', () => {
   return {
@@ -46,8 +54,7 @@ describe('ContactService', () => {
     service = moduleRef.get(ContactService);
   });
 
-  it('inicializa Resend con RESEND_API_KEY', async () => {
-    // El constructor ya se ejecuta al resolver el provider
+  it('inicializa Resend con RESEND_API_KEY', () => {
     expect(Resend).toHaveBeenCalledTimes(1);
     expect(Resend).toHaveBeenCalledWith('test_api_key');
   });
@@ -63,18 +70,12 @@ describe('ContactService', () => {
 
     expect(emailsSendMock).toHaveBeenCalledTimes(1);
 
-    const args = emailsSendMock.mock.calls[0][0] as {
-      from: string;
-      to: string;
-      subject: string;
-      text: string;
-    };
+    const [args] = emailsSendMock.mock.calls[0];
 
     expect(args.from).toBe('from@test.com');
     expect(args.to).toBe('to@test.com');
     expect(args.subject).toBe('Nuevo mensaje desde el portfolio');
 
-    // No testeamos el timestamp exacto, solo que esté y que incluya los campos
     expect(args.text).toContain('Nuevo mensaje de contacto');
     expect(args.text).toContain(`Nombre: ${dto.name}`);
     expect(args.text).toContain(`Email: ${dto.email}`);

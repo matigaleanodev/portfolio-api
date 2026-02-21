@@ -1,0 +1,39 @@
+name: CI Portfolio API
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: portfolio-api-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: E2E tests
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          CORS_ORIGIN: '*'
+        run: npm run test:e2e
