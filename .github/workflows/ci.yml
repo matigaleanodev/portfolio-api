@@ -1,26 +1,34 @@
-name: CI Portfolio API
+name: CI - Portfolio API
 
 on:
   pull_request:
     branches:
       - main
 
+permissions:
+  contents: read
+
 concurrency:
-  group: portfolio-api-ci-${{ github.ref }}
+  group: portfolio-api-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   ci:
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22.x]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 22
+      - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
           cache: npm
 
       - name: Install dependencies
@@ -30,10 +38,7 @@ jobs:
         run: npm run lint
 
       - name: Unit tests
-        run: npm test
+        run: npm test -- --ci --runInBand
 
       - name: E2E tests
-        env:
-          MONGO_URI: ${{ secrets.MONGO_URI }}
-          CORS_ORIGIN: '*'
         run: npm run test:e2e

@@ -1,19 +1,15 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from './../src/app.module';
-import { ContactService } from './../src/contact/contact.service';
+import { AppController } from './../src/app.controller';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(ContactService)
-      .useValue({ send: jest.fn() })
-      .compile();
+      controllers: [AppController],
+    }).compile();
 
     app = moduleFixture.createNestApplication();
 
@@ -22,7 +18,7 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await app.close();
   });
 
