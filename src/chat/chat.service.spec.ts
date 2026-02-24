@@ -1,0 +1,142 @@
+import { Test } from '@nestjs/testing';
+import { getModelToken } from '@nestjs/mongoose';
+import { Types } from 'mongoose';
+import { ChatQuestionLog } from './chat-question-log.schema';
+import { ChatService } from './chat.service';
+import { FaqService } from './faq.service';
+import { KnowledgeService } from './knowledge.service';
+import { OpenAiService } from './openai.service';
+
+describe('ChatService', () => {
+  let service: ChatService;
+
+  const faqServiceMock = {
+    getStarterQuestions: jest.fn(),
+    findBestMatch: jest.fn(),
+    incrementUsage: jest.fn(),
+    buildFollowUpSuggestions: jest.fn(),
+  };
+
+  const knowledgeServiceMock = {
+    getRelevantContext: jest.fn(),
+  };
+
+  const openAiServiceMock = {
+    generateChatResponse: jest.fn(),
+  };
+
+  const questionLogModelMock = {
+    create: jest.fn(),
+  };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        ChatService,
+        { provide: FaqService, useValue: faqServiceMock },
+        { provide: KnowledgeService, useValue: knowledgeServiceMock },
+        { provide: OpenAiService, useValue: openAiServiceMock },
+        {
+          provide: getModelToken(ChatQuestionLog.name),
+          useValue: questionLogModelMock,
+        },
+      ],
+    }).compile();
+
+    service = moduleRef.get(ChatService);
+  });
+
+  it('completa starters con fallback hasta 4', async () => {
+    faqServiceMock.getStarterQuestions.mockResolvedValue([
+      '¿Qué tecnologías usás?',
+    ]);
+
+    const result = await service.getStarters();
+
+    expect(result.suggestedQuestions).toHaveLength(4);
+    expect(result.suggestedQuestions).toContain('¿Qué tecnologías usás?');
+  });
+
+  it('responde por FAQ y registra uso/log', async () => {
+    const faqId = new Types.ObjectId();
+    faqServiceMock.findBestMatch.mockResolvedValue({
+      _id: faqId,
+      question: '¿Qué tecnologías usás?',
+      answer: 'Uso TypeScript y NestJS',
+      tags: ['skills'],
+    });
+    faqServiceMock.buildFollowUpSuggestions.mockReturnValue([
+      '¿Qué proyecto destacás?',
+      '¿Cuál es tu experiencia laboral?',
+    ]);
+    openAiServiceMock.generateChatResponse.mockResolvedValue({
+      answer: 'Trabajo con TypeScript y NestJS.',
+      suggestedQuestions: ['¿Qué proyecto destacás?', '¿Usás MongoDB?'],
+    });
+    questionLogModelMock.create.mockResolvedValue(undefined);
+
+    const result = await service.reply({
+      message: '¿Qué tecnologías usás?',
+      sessionId: 's1',
+    });
+
+    expect(faqServiceMock.incrementUsage).toHaveBeenCalledWith(
+      faqId.toHexString(),
+    );
+    expect(result.source).toBe('faq');
+    expect(result.answer).toBe('Trabajo con TypeScript y NestJS.');
+    expect(result.suggestedQuestions).toContain('¿Usás MongoDB?');
+    expect(questionLogModelMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        question: '¿Qué tecnologías usás?',
+        sessionId: 's1',
+        source: 'faq',
+        matchedFaqId: faqId.toHexString(),
+      }),
+    );
+  });
+
+  it('usa respuesta AI cuando no hay match FAQ', async () => {
+    faqServiceMock.findBestMatch.mockResolvedValue(null);
+    knowledgeServiceMock.getRelevantContext.mockResolvedValue([
+      {
+        sourceType: 'profile',
+        title: 'Proyectos',
+        text: 'Foodly Notes publicado en Play Store',
+        tags: ['projects'],
+      },
+    ]);
+    openAiServiceMock.generateChatResponse.mockResolvedValue({
+      answer: 'Sí, Foodly Notes está publicada en Play Store.',
+      suggestedQuestions: ['¿Qué tecnologías usaste en Foodly Notes?'],
+    });
+    questionLogModelMock.create.mockResolvedValue(undefined);
+
+    const result = await service.reply({
+      message: '¿Publicaste alguna app en play store?',
+      sessionId: 's2',
+    });
+
+    expect(result.source).toBe('ai');
+    expect(result.answer).toContain('Play Store');
+    expect(questionLogModelMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'ai' }),
+    );
+  });
+
+  it('cae en fallback si AI no responde', async () => {
+    faqServiceMock.findBestMatch.mockResolvedValue(null);
+    knowledgeServiceMock.getRelevantContext.mockResolvedValue([]);
+    openAiServiceMock.generateChatResponse.mockResolvedValue(null);
+    questionLogModelMock.create.mockResolvedValue(undefined);
+
+    const result = await service.reply({
+      message: 'Pregunta desconocida',
+    });
+
+    expect(result.source).toBe('fallback');
+    expect(result.suggestedQuestions).toHaveLength(4);
+  });
+});
