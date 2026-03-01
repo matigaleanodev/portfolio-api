@@ -139,4 +139,56 @@ describe('ChatService', () => {
     expect(result.source).toBe('fallback');
     expect(result.suggestedQuestions).toHaveLength(4);
   });
+
+  it('intercepta preguntas fuera de alcance con redireccion al portfolio', async () => {
+    questionLogModelMock.create.mockResolvedValue(undefined);
+
+    const result = await service.reply({
+      message: 'How much is 2+2?',
+      sessionId: 's3',
+    });
+
+    expect(result.source).toBe('fallback');
+    expect(result.answer).toContain(
+      'Solo puedo ayudar con preguntas sobre el portfolio',
+    );
+    expect(faqServiceMock.findBestMatch).not.toHaveBeenCalled();
+    expect(knowledgeServiceMock.getRelevantContext).not.toHaveBeenCalled();
+    expect(openAiServiceMock.generateChatResponse).not.toHaveBeenCalled();
+    expect(questionLogModelMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        question: 'How much is 2+2?',
+        source: 'fallback',
+      }),
+    );
+  });
+
+  it('mantiene flujo contextual para preguntas tecnicas aunque no haya match FAQ', async () => {
+    faqServiceMock.findBestMatch.mockResolvedValue(null);
+    knowledgeServiceMock.getRelevantContext.mockResolvedValue([
+      {
+        sourceType: 'profile',
+        title: 'Tecnologias principales',
+        text: 'Angular, Ionic y NestJS',
+        tags: ['angular', 'ionic', 'nestjs'],
+      },
+    ]);
+    openAiServiceMock.generateChatResponse.mockResolvedValue({
+      answer:
+        'Matias Galeano trabaja principalmente con Angular, Ionic y NestJS.',
+      suggestedQuestions: ['¿En qué proyecto aplicaste ese stack?'],
+    });
+    questionLogModelMock.create.mockResolvedValue(undefined);
+
+    const result = await service.reply({
+      message: 'Do you know React?',
+      sessionId: 's4',
+    });
+
+    expect(result.source).toBe('ai');
+    expect(knowledgeServiceMock.getRelevantContext).toHaveBeenCalledWith(
+      'Do you know React?',
+    );
+    expect(openAiServiceMock.generateChatResponse).toHaveBeenCalled();
+  });
 });
