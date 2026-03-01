@@ -3,6 +3,18 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ChatFaq, ChatFaqDocument } from './chat-faq.schema';
 
+export type ChatSystemEntryKey =
+  | 'out_of_scope'
+  | 'fallback'
+  | 'starter_fallback'
+  | 'ai_seed'
+  | 'ai_fallback';
+
+export interface ChatSystemEntry {
+  answer: string;
+  suggestedQuestions: string[];
+}
+
 @Injectable()
 export class FaqService {
   constructor(
@@ -122,6 +134,25 @@ export class FaqService {
     await this.faqModel
       .updateOne({ _id: faqId }, { $inc: { usageCount: 1 } })
       .exec();
+  }
+
+  async getSystemEntry(key: ChatSystemEntryKey): Promise<ChatSystemEntry | null> {
+    const entry = await this.faqModel
+      .findOne({
+        active: true,
+        tags: { $in: [`system:${key}`] },
+      })
+      .lean()
+      .exec();
+
+    if (!entry) {
+      return null;
+    }
+
+    return {
+      answer: entry.answer ?? '',
+      suggestedQuestions: (entry.suggestedQuestions ?? []).filter(Boolean),
+    };
   }
 
   buildFollowUpSuggestions(faq: ChatFaq, limit = 4): string[] {

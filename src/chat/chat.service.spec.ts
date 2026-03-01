@@ -14,6 +14,7 @@ describe('ChatService', () => {
     getStarterQuestions: jest.fn(),
     findBestMatch: jest.fn(),
     incrementUsage: jest.fn(),
+    getSystemEntry: jest.fn(),
     buildFollowUpSuggestions: jest.fn(),
   };
 
@@ -31,6 +32,7 @@ describe('ChatService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    faqServiceMock.getSystemEntry.mockResolvedValue(null);
 
     const moduleRef = await Test.createTestingModule({
       providers: [
