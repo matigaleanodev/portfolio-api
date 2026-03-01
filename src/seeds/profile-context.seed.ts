@@ -36,11 +36,22 @@ export const profileContextSeed: readonly ProfileContextSeedDocument[] = [
     sourceId: 'main-stack',
     title: 'Stack principal',
     text: [
-      'Stack principal: TypeScript, Angular, Ionic, Node.js, NestJS y MongoDB.',
+      'Stack principal: TypeScript, Angular, Ionic, Node.js y NestJS.',
+      'Bases de datos: MongoDB en proyectos personales y MySQL en el trabajo en Ingertec.',
+      'Interés en trabajar con PostgreSQL en un futuro próximo.',
       'Tecnologías complementarias: TailwindCSS, Capacitor e integración de APIs.',
       'Enfoque en código mantenible, estructura clara y productos listos para producción.',
     ].join(' '),
-    tags: ['skills', 'typescript', 'angular', 'ionic', 'nestjs', 'mongodb'],
+    tags: [
+      'skills',
+      'typescript',
+      'angular',
+      'ionic',
+      'nestjs',
+      'mongodb',
+      'mysql',
+      'postgresql',
+    ],
     active: true,
   },
   {
@@ -50,9 +61,22 @@ export const profileContextSeed: readonly ProfileContextSeedDocument[] = [
     text: [
       'Más de 3 años y medio en Ingertec Argentina como Fullstack Developer.',
       'Trabajo en desarrollo y evolución de plataformas reales de monitoreo, gestión y control.',
+      'En ese contexto también trabajo con MySQL.',
       'Experiencia en mantenimiento evolutivo, optimización de rendimiento y mejora continua.',
     ].join(' '),
     tags: ['experience', 'ingertec', 'fullstack'],
+    active: true,
+  },
+  {
+    sourceType: 'profile',
+    sourceId: 'main-responsibilities',
+    title: 'Responsabilidades en experiencia y proyectos',
+    text: [
+      'En experiencia laboral en Ingertec, responsabilidades principales: desarrollo fullstack sobre plataformas en producción, mantenimiento evolutivo, corrección de problemas, optimización de rendimiento y mejora continua de funcionalidades, trabajando también con MySQL.',
+      'También participación en definición de estructuras reutilizables para aplicaciones con Ionic y soporte técnico sobre sistemas como Smartsen, Smart IOT, Consejar y GeonTracker.',
+      'En proyectos personales del portfolio, responsabilidades: diseño de arquitectura, desarrollo de frontend y backend, modelado de APIs, autenticación, integración de funcionalidades, despliegue en AWS y mantenimiento posterior.',
+    ].join(' '),
+    tags: ['experience', 'projects', 'responsibilities', 'role', 'ingertec'],
     active: true,
   },
   {
@@ -66,6 +90,18 @@ export const profileContextSeed: readonly ProfileContextSeedDocument[] = [
       'Los backends de Portfolio, Foodly Notes y Modo Playa están desplegados en EC2 de AWS.',
     ].join(' '),
     tags: ['projects', 'portfolio', 'foodly-notes', 'modo-playa'],
+    active: true,
+  },
+  {
+    sourceType: 'profile',
+    sourceId: 'main-technical-challenges',
+    title: 'Desafíos técnicos principales',
+    text: [
+      'Desafío técnico destacado en experiencia laboral: optimización de rendimiento del sistema Smartsen en monitores de tiempo real, históricos y control de objetivos y desvíos, trabajando sobre un sistema productivo.',
+      'Desafío técnico en proyectos personales: diseñar arquitectura desacoplada y mantenible entre apps y APIs con NestJS/Angular/Ionic, incluyendo autenticación, multi-tenant en Modo Playa y despliegues estables en AWS.',
+      'El enfoque fue resolver problemas reales sin comprometer mantenibilidad ni escalabilidad.',
+    ].join(' '),
+    tags: ['experience', 'projects', 'challenge', 'technical', 'performance'],
     active: true,
   },
   {

@@ -38,7 +38,7 @@ export const chatFaqSeed: ChatFaqSeed[] = [
   {
     question: '¿Qué tecnologías usás?',
     answer:
-      'Trabajo principalmente con TypeScript, Angular, Ionic, Node.js, NestJS y MongoDB. También uso TailwindCSS, Capacitor e integración de APIs para construir productos escalables.',
+      'Trabajo principalmente con TypeScript, Angular, Ionic, Node.js y NestJS. En proyectos personales uso MongoDB y en mi trabajo en Ingertec también trabajo con MySQL. Además uso TailwindCSS, Capacitor e integración de APIs para construir productos escalables, y me interesa sumar PostgreSQL en el corto plazo.',
     aliases: ['que tecnologias usas', 'stack', 'stack tecnico', 'herramientas'],
     tags: ['skills'],
     isStarterCandidate: true,
@@ -52,6 +52,31 @@ export const chatFaqSeed: ChatFaqSeed[] = [
     active: true,
     usageCount: 0,
     starterPriority: 2,
+  },
+  {
+    question: '¿Qué bases de datos usás?',
+    answer:
+      'Trabajo con MongoDB en proyectos personales y con MySQL en mi trabajo en Ingertec. Además, tengo interés en trabajar con PostgreSQL en un futuro próximo.',
+    aliases: [
+      'que base de datos usas',
+      'que bases de datos usas',
+      'con que base de datos trabajas',
+      'con que bases de datos trabajas',
+      'base de datos',
+      'bd que usas',
+    ],
+    tags: ['skills', 'experience'],
+    isStarterCandidate: false,
+    isFixedStarter: false,
+    suggestedQuestions: [
+      '¿Qué tecnologías usás?',
+      '¿Cuál es tu experiencia laboral?',
+      '¿Qué responsabilidades tuviste?',
+      '¿Qué proyecto destacás?',
+    ],
+    active: true,
+    usageCount: 0,
+    starterPriority: 0,
   },
   {
     question: '¿Qué proyecto destacás?',
@@ -74,7 +99,7 @@ export const chatFaqSeed: ChatFaqSeed[] = [
   {
     question: '¿Cuál es tu experiencia laboral?',
     answer:
-      'Tengo más de 3 años y medio de experiencia en Ingertec Argentina como Fullstack Developer, trabajando sobre plataformas reales. También desarrollo proyectos personales fullstack.',
+      'Tengo más de 3 años y medio de experiencia en Ingertec Argentina como Fullstack Developer, trabajando sobre plataformas reales y utilizando MySQL en ese contexto. También desarrollo proyectos personales fullstack, donde uso MongoDB.',
     aliases: ['experiencia laboral', 'trayectoria', 'experiencia'],
     tags: ['experience'],
     isStarterCandidate: true,
@@ -88,6 +113,56 @@ export const chatFaqSeed: ChatFaqSeed[] = [
     active: true,
     usageCount: 0,
     starterPriority: 4,
+  },
+  {
+    question: '¿Qué responsabilidades tuviste?',
+    answer:
+      'En experiencia laboral me encargué del desarrollo y evolución de plataformas en producción, mantenimiento evolutivo, optimización de rendimiento y mejoras continuas en frontend y backend. En proyectos personales definí arquitectura, desarrollo fullstack, integración de APIs, autenticación, despliegue en AWS y mantenimiento de las aplicaciones publicadas.',
+    aliases: [
+      'que responsabilidades tuviste',
+      'cuales fueron tus responsabilidades',
+      'que responsabilidades tenias',
+      'responsabilidades en proyectos',
+      'responsabilidades en experiencia laboral',
+      'cual fue tu rol en los proyectos',
+    ],
+    tags: ['experience', 'projects'],
+    isStarterCandidate: false,
+    isFixedStarter: false,
+    suggestedQuestions: [
+      '¿Cuál fue el mayor desafío técnico?',
+      '¿Qué tecnologías usaste en esos roles?',
+      '¿Qué proyecto destacás?',
+      '¿Cuál es tu experiencia laboral?',
+    ],
+    active: true,
+    usageCount: 0,
+    starterPriority: 0,
+  },
+  {
+    question: '¿Cuál fue el mayor desafío técnico?',
+    answer:
+      'En experiencia laboral, uno de los mayores desafíos fue optimizar rendimiento en monitores en tiempo real, históricos y control de objetivos/desvíos dentro de Smartsen sin afectar operación productiva. En proyectos personales, el desafío principal fue diseñar APIs y aplicaciones desacopladas con arquitectura mantenible, autenticación y despliegue en AWS para soportar evolución real (por ejemplo en Modo Playa y Foodly Notes).',
+    aliases: [
+      'cual fue el mayor desafio tecnico',
+      'que desafio tecnico resolviste',
+      'desafio tecnico en proyectos',
+      'desafio tecnico en experiencia laboral',
+      'problema tecnico mas complejo',
+      'reto tecnico mas grande',
+    ],
+    tags: ['experience', 'projects', 'achievements'],
+    isStarterCandidate: false,
+    isFixedStarter: false,
+    suggestedQuestions: [
+      '¿Qué responsabilidades tuviste?',
+      '¿Qué proyecto destacás?',
+      '¿Qué tecnologías usás?',
+      '¿Cuál es tu experiencia laboral?',
+    ],
+    active: true,
+    usageCount: 0,
+    starterPriority: 0,
   },
   {
     question: '¿Qué tipo de propuestas te interesan?',
