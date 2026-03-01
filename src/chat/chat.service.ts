@@ -10,24 +10,26 @@ import {
   ChatResponseDto,
   ChatStartersResponseDto,
 } from './chat.dto';
+import {
+  CHAT_DEFAULT_AI_FALLBACK_SUGGESTIONS,
+  CHAT_DEFAULT_AI_SEED_QUESTIONS,
+  CHAT_DEFAULT_FALLBACK_ANSWER,
+  CHAT_DEFAULT_FALLBACK_STARTERS,
+  CHAT_DEFAULT_FALLBACK_SUGGESTED_QUESTIONS,
+  CHAT_DEFAULT_OUT_OF_SCOPE_ANSWER,
+  CHAT_DEFAULT_OUT_OF_SCOPE_SUGGESTED_QUESTIONS,
+  CHAT_GENERAL_KNOWLEDGE_TERMS,
+  CHAT_GENERIC_BUILD_LANGUAGES,
+  CHAT_GENERIC_BUILD_VERBS,
+  CHAT_PORTFOLIO_ANCHOR_TERMS,
+  CHAT_PROFESSIONAL_TOPIC_TERMS,
+} from './chat-content.config';
 import { FaqService } from './faq.service';
 import { KnowledgeService } from './knowledge.service';
 import { OpenAiService } from './openai.service';
 
 @Injectable()
 export class ChatService {
-  private readonly outOfScopeResponse: ChatResponseDto = {
-    answer:
-      'Solo puedo ayudar con preguntas sobre el portfolio, proyectos y experiencia de Matias Galeano. Podés consultarme por su stack, Foodly Notes, Modo Playa o su arquitectura backend con NestJS.',
-    suggestedQuestions: [
-      '¿Qué tecnologías usás actualmente?',
-      '¿Qué proyecto destacás de tu portfolio?',
-      '¿Cómo construiste el chatbot del portfolio?',
-      '¿Cuál fue tu experiencia más reciente?',
-    ],
-    source: 'fallback',
-  };
-
   constructor(
     private readonly faqService: FaqService,
     private readonly knowledgeService: KnowledgeService,
@@ -39,12 +41,10 @@ export class ChatService {
   async getStarters(): Promise<ChatStartersResponseDto> {
     const starters = await this.faqService.getStarterQuestions(4);
 
-    const fallbackStarters = [
-      '¿Quién sos y a qué te dedicás?',
-      '¿Qué tecnologías usás?',
-      '¿Qué proyecto destacás de tu portfolio?',
-      '¿Cuál fue tu experiencia más reciente?',
-    ];
+    const fallbackStarters = await this.getSystemSuggestedQuestions(
+      'starter_fallback',
+      CHAT_DEFAULT_FALLBACK_STARTERS,
+    );
 
     const combined = [...starters];
     for (const question of fallbackStarters) {
@@ -61,8 +61,13 @@ export class ChatService {
 
   async reply(dto: ChatRequestDto): Promise<ChatResponseDto> {
     if (this.isOutOfScopeQuestion(dto.message)) {
-      await this.logQuestion(dto, this.outOfScopeResponse.source);
-      return this.outOfScopeResponse;
+      const outOfScopeResponse = await this.buildSystemResponse(
+        'out_of_scope',
+        CHAT_DEFAULT_OUT_OF_SCOPE_ANSWER,
+        CHAT_DEFAULT_OUT_OF_SCOPE_SUGGESTED_QUESTIONS,
+      );
+      await this.logQuestion(dto, outOfScopeResponse.source);
+      return outOfScopeResponse;
     }
 
     const faqMatch = await this.faqService.findBestMatch(dto.message);
@@ -105,25 +110,22 @@ export class ChatService {
     const aiResponse = await this.openAiService.generateChatResponse({
       userMessage: dto.message,
       contextItems,
-      suggestedSeedQuestions: [
-        '¿Qué tecnologías usaste en ese proyecto?',
-        '¿Cuál fue el mayor desafío técnico?',
-        '¿Qué rol tuviste en ese proyecto?',
-        '¿Qué otros proyectos similares tenés?',
-      ],
+      suggestedSeedQuestions: await this.getSystemSuggestedQuestions(
+        'ai_seed',
+        CHAT_DEFAULT_AI_SEED_QUESTIONS,
+      ),
     });
 
     if (aiResponse && aiResponse.answer) {
+      const aiFallbackSuggestions = await this.getSystemSuggestedQuestions(
+        'ai_fallback',
+        CHAT_DEFAULT_AI_FALLBACK_SUGGESTIONS,
+      );
       const response: ChatResponseDto = {
         answer: aiResponse.answer,
         suggestedQuestions: this.mergeSuggestions(
           aiResponse.suggestedQuestions,
-          [
-            '¿Qué proyecto destacás de tu portfolio?',
-            '¿Qué tecnologías usás actualmente?',
-            '¿Cuál fue tu experiencia más reciente?',
-            '¿En qué tipo de proyectos te especializás?',
-          ],
+          aiFallbackSuggestions,
         ),
         source: 'ai',
       };
@@ -132,17 +134,11 @@ export class ChatService {
       return response;
     }
 
-    const fallbackResponse: ChatResponseDto = {
-      answer:
-        'No tengo esa información disponible en el portfolio por ahora. Si querés, podés preguntarme sobre proyectos, tecnologías o experiencia.',
-      suggestedQuestions: [
-        '¿Qué tecnologías usás?',
-        '¿Qué proyecto destacás de tu portfolio?',
-        '¿Cuál fue tu experiencia más reciente?',
-        '¿Cómo puedo contactarte?',
-      ],
-      source: 'fallback',
-    };
+    const fallbackResponse = await this.buildSystemResponse(
+      'fallback',
+      CHAT_DEFAULT_FALLBACK_ANSWER,
+      CHAT_DEFAULT_FALLBACK_SUGGESTED_QUESTIONS,
+    );
 
     await this.logQuestion(dto, fallbackResponse.source);
     return fallbackResponse;
@@ -196,63 +192,19 @@ export class ChatService {
       return false;
     }
 
-    const hasPortfolioAnchor = this.containsAny(normalized, [
-      'matias',
-      'galeano',
-      'portfolio',
-      'portafolio',
-      'proyecto',
-      'proyectos',
-      'experiencia',
-      'trayectoria',
-      'trabajo',
-      'roles',
-      'rol',
-      'stack',
-      'tecnologias',
-      'tecnologia',
-      'frontend',
-      'backend',
-      'api',
-      'chatbot',
-      'foodly',
-      'modo playa',
-      'contacto',
-      'cv',
-    ]);
+    const hasPortfolioAnchor = this.containsAny(
+      normalized,
+      CHAT_PORTFOLIO_ANCHOR_TERMS,
+    );
 
     if (hasPortfolioAnchor) {
       return false;
     }
 
-    const hasProfessionalTopic = this.containsAny(normalized, [
-      'angular',
-      'ionic',
-      'nestjs',
-      'nest',
-      'typescript',
-      'javascript',
-      'node',
-      'react',
-      'vue',
-      'mongodb',
-      'sql',
-      'aws',
-      'docker',
-      'arquitectura',
-      'desarrollo',
-      'app',
-      'aplicacion',
-      'codigo',
-      'programacion',
-      'framework',
-      'libreria',
-      'deploy',
-      'performance',
-      'testing',
-      'ci',
-      'cd',
-    ]);
+    const hasProfessionalTopic = this.containsAny(
+      normalized,
+      CHAT_PROFESSIONAL_TOPIC_TERMS,
+    );
 
     const mathExpressionPattern = /^[\d\s+\-*/().=]+[?]?$/;
     if (mathExpressionPattern.test(normalized)) {
@@ -260,42 +212,15 @@ export class ChatService {
     }
 
     if (
-      this.containsAny(normalized, [
-        'cuanto es',
-        'how much is',
-        'capital de',
-        'history of',
-        'historia de',
-        'quien gano',
-        'who won',
-        'quien es',
-        'who is',
-        'define',
-        'traduce',
-      ]) &&
+      this.containsAny(normalized, CHAT_GENERAL_KNOWLEDGE_TERMS) &&
       !hasProfessionalTopic
     ) {
       return true;
     }
 
     const unrelatedBuildRequest =
-      this.containsAny(normalized, [
-        'implementa',
-        'implementame',
-        'crea',
-        'desarrolla',
-        'build',
-        'implement',
-        'write',
-      ]) &&
-      this.containsAny(normalized, [
-        'en go',
-        'in go',
-        'en python',
-        'in python',
-        'en java',
-        'in java',
-      ]) &&
+      this.containsAny(normalized, CHAT_GENERIC_BUILD_VERBS) &&
+      this.containsAny(normalized, CHAT_GENERIC_BUILD_LANGUAGES) &&
       !hasProfessionalTopic;
 
     if (unrelatedBuildRequest) {
@@ -317,5 +242,34 @@ export class ChatService {
 
   private containsAny(text: string, terms: readonly string[]): boolean {
     return terms.some((term) => text.includes(term));
+  }
+
+  private async buildSystemResponse(
+    key: 'out_of_scope' | 'fallback',
+    defaultAnswer: string,
+    defaultSuggestedQuestions: readonly string[],
+  ): Promise<ChatResponseDto> {
+    const entry = await this.faqService.getSystemEntry(key);
+
+    return {
+      answer: entry?.answer?.trim() || defaultAnswer,
+      suggestedQuestions:
+        entry?.suggestedQuestions?.length && entry.suggestedQuestions.length > 0
+          ? entry.suggestedQuestions.slice(0, 4)
+          : [...defaultSuggestedQuestions],
+      source: 'fallback',
+    };
+  }
+
+  private async getSystemSuggestedQuestions(
+    key: 'starter_fallback' | 'ai_seed' | 'ai_fallback',
+    defaults: readonly string[],
+  ): Promise<string[]> {
+    const entry = await this.faqService.getSystemEntry(key);
+    if (!entry || entry.suggestedQuestions.length === 0) {
+      return [...defaults];
+    }
+
+    return entry.suggestedQuestions.slice(0, 4);
   }
 }
