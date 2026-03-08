@@ -1,48 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
-import fs from 'node:fs/promises';
+import { Injectable } from '@nestjs/common';
 import {
   CHAT_BLOG_TOPIC_TERMS,
   CHAT_CLOUD_TOPIC_TERMS,
   CHAT_PROFILE_TOPIC_TERMS,
   CHAT_PROJECT_TOPIC_TERMS,
 } from './chat-content.config';
-import { resolveExistingEditorialKnowledgePath } from '../config/runtime.config';
 import { CLOUD_KNOWLEDGE_ITEMS } from './knowledge/cloud.knowledge';
 import { PROFILE_KNOWLEDGE_ITEMS } from './knowledge/profile.knowledge';
-import { KnowledgeContextItem, KnowledgeLink } from './chat.types';
-
-type EditorialKnowledgeArtifact = {
-  generatedAt?: string;
-  projects?: EditorialProjectEntry[];
-  posts?: EditorialPostEntry[];
-};
-
-type EditorialProjectEntry = {
-  slug: string;
-  title: string;
-  excerpt: string;
-  stack?: string[];
-  links?: KnowledgeLink[];
-  highlights?: string[];
-  searchText?: string;
-};
-
-type EditorialPostEntry = {
-  slug: string;
-  title: string;
-  excerpt: string;
-  date: string;
-  tags?: string[];
-  canonicalUrl?: string;
-  summary?: string;
-  searchText?: string;
-};
-
-type KnowledgeCacheEntry = {
-  filePath: string;
-  mtimeMs: number;
-  items: KnowledgeContextItem[];
-};
+import { KnowledgeContextItem } from './chat.types';
+import {
+  ChatKnowledgeRepository,
+  EditorialKnowledgeArtifact,
+} from './chat-knowledge.repository';
 
 const CURATED_KNOWLEDGE_ITEMS: readonly KnowledgeContextItem[] = [
   ...PROFILE_KNOWLEDGE_ITEMS,
@@ -51,10 +20,9 @@ const CURATED_KNOWLEDGE_ITEMS: readonly KnowledgeContextItem[] = [
 
 @Injectable()
 export class KnowledgeService {
-  private readonly logger = new Logger(KnowledgeService.name);
-  private editorialKnowledgeCache: KnowledgeCacheEntry | null = null;
-  private missingEditorialPathLogged = false;
-  private editorialLoadFailedLogged = false;
+  constructor(
+    private readonly chatKnowledgeRepository: ChatKnowledgeRepository,
+  ) {}
 
   async getRelevantContext(question: string): Promise<KnowledgeContextItem[]> {
     const normalized = this.normalize(question);
@@ -76,59 +44,9 @@ export class KnowledgeService {
   }
 
   private async getEditorialKnowledgeItems(): Promise<KnowledgeContextItem[]> {
-    const filePath = await this.resolveEditorialKnowledgePath();
-    if (!filePath) {
-      return [];
-    }
+    const artifact = await this.chatKnowledgeRepository.getKnowledge();
 
-    try {
-      const stats = await fs.stat(filePath);
-      if (
-        this.editorialKnowledgeCache &&
-        this.editorialKnowledgeCache.filePath === filePath &&
-        this.editorialKnowledgeCache.mtimeMs === stats.mtimeMs
-      ) {
-        return this.editorialKnowledgeCache.items;
-      }
-
-      const raw = await fs.readFile(filePath, 'utf8');
-      const parsed = JSON.parse(raw) as EditorialKnowledgeArtifact;
-      const items = this.mapEditorialArtifactToKnowledgeItems(parsed);
-      this.editorialKnowledgeCache = {
-        filePath,
-        mtimeMs: stats.mtimeMs,
-        items,
-      };
-      this.editorialLoadFailedLogged = false;
-
-      return items;
-    } catch (error) {
-      if (!this.editorialLoadFailedLogged) {
-        this.logger.warn(
-          `Failed to load editorial chat knowledge from "${filePath}": ${
-            error instanceof Error ? error.message : 'unknown error'
-          }`,
-        );
-        this.editorialLoadFailedLogged = true;
-      }
-      return [];
-    }
-  }
-
-  private async resolveEditorialKnowledgePath(): Promise<string | null> {
-    const existingPath = await resolveExistingEditorialKnowledgePath();
-    if (existingPath) {
-      return existingPath;
-    }
-
-    if (!this.missingEditorialPathLogged) {
-      this.logger.warn(
-        'Editorial chat knowledge artifact not found. The chatbot will answer only with curated local knowledge.',
-      );
-      this.missingEditorialPathLogged = true;
-    }
-
-    return null;
+    return this.mapEditorialArtifactToKnowledgeItems(artifact);
   }
 
   private mapEditorialArtifactToKnowledgeItems(

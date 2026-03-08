@@ -2,6 +2,9 @@ import os from 'node:os';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
+  getChatKnowledgeCacheTtlMs,
+  getChatKnowledgeObjectKey,
+  getChatKnowledgeR2Config,
   getEditorialKnowledgeCandidatePaths,
   getMissingRequiredEnv,
   getPortfolioCloudApiBaseUrl,
@@ -87,6 +90,32 @@ describe('runtime.config', () => {
       ).toBe('https://cloud.example.com/dev');
     });
 
+    it('returns a default cache ttl and object key for chat knowledge', () => {
+      expect(getChatKnowledgeObjectKey({})).toBe(
+        'artifacts/chat/knowledge.json',
+      );
+      expect(getChatKnowledgeCacheTtlMs({})).toBe(300000);
+    });
+
+    it('builds the R2 chat knowledge config when the required env exists', () => {
+      expect(
+        getChatKnowledgeR2Config({
+          R2_ENDPOINT: 'https://r2.example.com',
+          R2_BUCKET: 'portfolio-media',
+          R2_ACCESS_KEY_ID: 'key',
+          R2_SECRET_ACCESS_KEY: 'secret',
+        }),
+      ).toEqual({
+        endpoint: 'https://r2.example.com',
+        region: 'auto',
+        bucket: 'portfolio-media',
+        accessKeyId: 'key',
+        secretAccessKey: 'secret',
+        objectKey: 'artifacts/chat/knowledge.json',
+        cacheTtlMs: 300000,
+      });
+    });
+
     it('does not require the editorial artifact outside production', async () => {
       await expect(
         validateRuntimeConfiguration(
@@ -100,6 +129,38 @@ describe('runtime.config', () => {
           '/tmp/non-existent',
         ),
       ).resolves.toBeUndefined();
+    });
+
+    it('does not require the local editorial artifact in production when R2 chat knowledge is configured', async () => {
+      const cwdPath = await fs.mkdtemp(
+        path.join(os.tmpdir(), 'portfolio-api-runtime-'),
+      );
+
+      await expect(
+        validateRuntimeConfiguration(
+          {
+            NODE_ENV: 'production',
+            RESEND_API_KEY: 'key',
+            CONTACT_FROM_EMAIL: 'from@example.com',
+            CONTACT_TO_EMAIL: 'to@example.com',
+            PORTFOLIO_CLOUD_API_URL: 'https://cloud.example.com/dev',
+            R2_ENDPOINT: 'https://r2.example.com',
+            R2_BUCKET: 'portfolio-media',
+            R2_ACCESS_KEY_ID: 'key',
+            R2_SECRET_ACCESS_KEY: 'secret',
+          },
+          cwdPath,
+        ),
+      ).resolves.toBeUndefined();
+    });
+
+    it('fails early when the R2 chat knowledge config is incomplete', () => {
+      expect(() =>
+        getChatKnowledgeR2Config({
+          R2_ENDPOINT: 'https://r2.example.com',
+          R2_BUCKET: 'portfolio-media',
+        }),
+      ).toThrow('Incomplete R2 chat knowledge configuration');
     });
 
     it('requires the editorial artifact in production', async () => {
