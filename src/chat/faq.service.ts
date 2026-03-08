@@ -22,57 +22,6 @@ export class FaqService {
     private readonly faqModel: Model<ChatFaqDocument>,
   ) {}
 
-  async getStarterQuestions(limit = 4): Promise<string[]> {
-    const fixed = await this.faqModel
-      .find({ active: true, isFixedStarter: true })
-      .sort({ starterPriority: 1, usageCount: -1 })
-      .lean()
-      .exec();
-
-    const seen = new Set<string>();
-    const starters: string[] = [];
-
-    for (const faq of fixed) {
-      const key = this.normalize(faq.question);
-      if (!seen.has(key)) {
-        seen.add(key);
-        starters.push(faq.question);
-      }
-      if (starters.length >= limit) {
-        return starters.slice(0, limit);
-      }
-    }
-
-    const dynamicCandidates = await this.faqModel
-      .find({
-        active: true,
-        isStarterCandidate: true,
-        isFixedStarter: { $ne: true },
-      })
-      .sort({ usageCount: -1, starterPriority: 1 })
-      .limit(20)
-      .lean()
-      .exec();
-
-    const shuffled = this.shuffle([...dynamicCandidates]);
-
-    for (const faq of shuffled) {
-      const key = this.normalize(faq.question);
-      if (seen.has(key)) {
-        continue;
-      }
-
-      seen.add(key);
-      starters.push(faq.question);
-
-      if (starters.length >= limit) {
-        break;
-      }
-    }
-
-    return starters.slice(0, limit);
-  }
-
   async findBestMatch(
     question: string,
   ): Promise<(ChatFaq & { _id: Types.ObjectId }) | null> {
@@ -155,7 +104,7 @@ export class FaqService {
     };
   }
 
-  buildFollowUpSuggestions(faq: ChatFaq, limit = 4): string[] {
+  buildFollowUpSuggestions(faq: ChatFaq, limit = 2): string[] {
     const own = (faq.suggestedQuestions ?? []).filter(Boolean);
     if (own.length > 0) {
       return own.slice(0, limit);
@@ -205,15 +154,6 @@ export class FaqService {
       .replace(/[^\p{L}\p{N}\s]/gu, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-  }
-
-  private shuffle<T>(items: T[]): T[] {
-    for (let i = items.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [items[i], items[j]] = [items[j], items[i]];
-    }
-
-    return items;
   }
 
   private escapeRegex(value: string): string {

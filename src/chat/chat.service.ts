@@ -14,8 +14,8 @@ import {
   CHAT_DEFAULT_AI_FALLBACK_SUGGESTIONS,
   CHAT_DEFAULT_AI_SEED_QUESTIONS,
   CHAT_DEFAULT_FALLBACK_ANSWER,
-  CHAT_DEFAULT_FALLBACK_STARTERS,
   CHAT_DEFAULT_FALLBACK_SUGGESTED_QUESTIONS,
+  CHAT_DEFAULT_STARTERS,
   CHAT_DEFAULT_OUT_OF_SCOPE_ANSWER,
   CHAT_DEFAULT_OUT_OF_SCOPE_SUGGESTED_QUESTIONS,
   CHAT_GENERAL_KNOWLEDGE_TERMS,
@@ -39,24 +39,7 @@ export class ChatService {
   ) {}
 
   async getStarters(): Promise<ChatStartersResponseDto> {
-    const starters = await this.faqService.getStarterQuestions(4);
-
-    const fallbackStarters = await this.getSystemSuggestedQuestions(
-      'starter_fallback',
-      CHAT_DEFAULT_FALLBACK_STARTERS,
-    );
-
-    const combined = [...starters];
-    for (const question of fallbackStarters) {
-      if (combined.length >= 4) {
-        break;
-      }
-      if (!combined.includes(question)) {
-        combined.push(question);
-      }
-    }
-
-    return { suggestedQuestions: combined.slice(0, 4) };
+    return { suggestedQuestions: [...CHAT_DEFAULT_STARTERS] };
   }
 
   async reply(dto: ChatRequestDto): Promise<ChatResponseDto> {
@@ -165,7 +148,7 @@ export class ChatService {
       seen.add(key);
       merged.push(clean);
 
-      if (merged.length >= 4) {
+      if (merged.length >= 2) {
         break;
       }
     }
@@ -255,8 +238,8 @@ export class ChatService {
       answer: entry?.answer?.trim() || defaultAnswer,
       suggestedQuestions:
         entry?.suggestedQuestions?.length && entry.suggestedQuestions.length > 0
-          ? entry.suggestedQuestions.slice(0, 4)
-          : [...defaultSuggestedQuestions],
+          ? entry.suggestedQuestions.slice(0, 2)
+          : [...defaultSuggestedQuestions].slice(0, 2),
       source: 'fallback',
     };
   }
@@ -267,9 +250,9 @@ export class ChatService {
   ): Promise<string[]> {
     const entry = await this.faqService.getSystemEntry(key);
     if (!entry || entry.suggestedQuestions.length === 0) {
-      return [...defaults];
+      return [...defaults].slice(0, 2);
     }
 
-    return entry.suggestedQuestions.slice(0, 4);
+    return entry.suggestedQuestions.slice(0, 2);
   }
 }

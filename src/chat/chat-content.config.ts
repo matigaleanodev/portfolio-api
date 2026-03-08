@@ -4,29 +4,21 @@ export const CHAT_DEFAULT_OUT_OF_SCOPE_ANSWER =
 export const CHAT_DEFAULT_OUT_OF_SCOPE_SUGGESTED_QUESTIONS = [
   '¿Qué tecnologías usás actualmente?',
   '¿Qué proyecto destacás de tu portfolio?',
-  '¿Cómo construiste el chatbot del portfolio?',
-  '¿Cuál fue tu experiencia más reciente?',
 ] as const;
 
-export const CHAT_DEFAULT_FALLBACK_STARTERS = [
+export const CHAT_DEFAULT_STARTERS = [
   '¿Quién sos y a qué te dedicás?',
   '¿Qué tecnologías usás?',
-  '¿Qué proyecto destacás de tu portfolio?',
-  '¿Cuál fue tu experiencia más reciente?',
 ] as const;
 
 export const CHAT_DEFAULT_AI_SEED_QUESTIONS = [
   '¿Qué tecnologías usaste en ese proyecto?',
   '¿Cuál fue el mayor desafío técnico?',
-  '¿Qué rol tuviste en ese proyecto?',
-  '¿Qué otros proyectos similares tenés?',
 ] as const;
 
 export const CHAT_DEFAULT_AI_FALLBACK_SUGGESTIONS = [
   '¿Qué proyecto destacás de tu portfolio?',
   '¿Qué tecnologías usás actualmente?',
-  '¿Cuál fue tu experiencia más reciente?',
-  '¿En qué tipo de proyectos te especializás?',
 ] as const;
 
 export const CHAT_DEFAULT_FALLBACK_ANSWER =
@@ -35,8 +27,6 @@ export const CHAT_DEFAULT_FALLBACK_ANSWER =
 export const CHAT_DEFAULT_FALLBACK_SUGGESTED_QUESTIONS = [
   '¿Qué tecnologías usás?',
   '¿Qué proyecto destacás de tu portfolio?',
-  '¿Cuál fue tu experiencia más reciente?',
-  '¿Cómo puedo contactarte?',
 ] as const;
 
 export const CHAT_PORTFOLIO_ANCHOR_TERMS = [
@@ -199,7 +189,7 @@ export const OPENAI_SYSTEM_PROMPT_LINES = [
   '',
   'FORMATO DE RESPUESTA OBLIGATORIO:',
   'Devolvé JSON válido con este formato:',
-  '{"answer":"string","suggestedQuestions":["q1","q2","q3"]}',
+  '{"answer":"string","suggestedQuestions":["q1","q2"]}',
   '',
-  'Las suggestedQuestions deben ser 2 o 3 preguntas cortas, consecuentes y relevantes.',
+  'Las suggestedQuestions deben ser exactamente 2 preguntas cortas, consecuentes y relevantes.',
 ] as const;

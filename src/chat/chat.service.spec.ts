@@ -11,7 +11,6 @@ describe('ChatService', () => {
   let service: ChatService;
 
   const faqServiceMock = {
-    getStarterQuestions: jest.fn(),
     findBestMatch: jest.fn(),
     incrementUsage: jest.fn(),
     getSystemEntry: jest.fn(),
@@ -50,15 +49,13 @@ describe('ChatService', () => {
     service = moduleRef.get(ChatService);
   });
 
-  it('completa starters con fallback hasta 4', async () => {
-    faqServiceMock.getStarterQuestions.mockResolvedValue([
-      '¿Qué tecnologías usás?',
-    ]);
-
+  it('devuelve starters fijos y simplificados', async () => {
     const result = await service.getStarters();
 
-    expect(result.suggestedQuestions).toHaveLength(4);
-    expect(result.suggestedQuestions).toContain('¿Qué tecnologías usás?');
+    expect(result.suggestedQuestions).toEqual([
+      '¿Quién sos y a qué te dedicás?',
+      '¿Qué tecnologías usás?',
+    ]);
   });
 
   it('responde por FAQ y registra uso/log', async () => {
@@ -89,7 +86,10 @@ describe('ChatService', () => {
     );
     expect(result.source).toBe('faq');
     expect(result.answer).toBe('Trabajo con TypeScript y NestJS.');
-    expect(result.suggestedQuestions).toContain('¿Usás MongoDB?');
+    expect(result.suggestedQuestions).toEqual([
+      '¿Qué proyecto destacás?',
+      '¿Usás MongoDB?',
+    ]);
     expect(questionLogModelMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
         question: '¿Qué tecnologías usás?',
@@ -139,7 +139,7 @@ describe('ChatService', () => {
     });
 
     expect(result.source).toBe('fallback');
-    expect(result.suggestedQuestions).toHaveLength(4);
+    expect(result.suggestedQuestions).toHaveLength(2);
   });
 
   it('intercepta preguntas fuera de alcance con redireccion al portfolio', async () => {

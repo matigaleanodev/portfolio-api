@@ -35,28 +35,6 @@
       ]
     },
     {
-      "name": "Projects",
-      "item": [
-        {
-          "name": "GET /projects",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/projects",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "projects"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
       "name": "Contact",
       "item": [
         {

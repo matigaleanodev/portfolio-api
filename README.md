@@ -3,13 +3,11 @@
 API backend del portfolio personal con:
 
 - formulario de contacto
-- endpoint público de proyectos
 - chatbot híbrido (FAQ + conocimiento curado local + artifacts editoriales + OpenAI)
 
 ## ✨ Features
 
 - Endpoint público de contacto
-- Endpoint público de proyectos
 - Chatbot híbrido con sugerencias de preguntas
 - Starters del chat (`GET /api/chat/starters`)
 - FAQ seedable en MongoDB
@@ -40,45 +38,6 @@ Respuesta:
 ```json
 { "status": "ok" }
 ```
-
-## 📂 Proyectos
-
-La API expone un endpoint público de solo lectura para obtener los proyectos que se muestran en el portfolio.
-
-### `GET /api/projects`
-
-Devuelve la lista completa de proyectos, ordenados según el campo `order`.
-
-- Endpoint público
-- Sin autenticación
-- Solo lectura
-- Datos obtenidos desde MongoDB Atlas
-
-Ejemplo de respuesta:
-
-```json
-[
-  {
-    "name": "Foodly Notes",
-    "image": "/assets/foodly-notes.webp",
-    "description": "Foodly Notes es una aplicación de recetas pensada como producto real para el uso cotidiano...",
-    "technologies": ["Angular", "Ionic", "NestJS", "MongoDB"],
-    "links": [
-      {
-        "id": "frontend",
-        "name": "Repositorio Frontend",
-        "icon": "code",
-        "color": "primary",
-        "url": "https://github.com/matigaleanodev/foodly-notes"
-      }
-    ],
-    "highlight": true,
-    "order": 1
-  }
-]
-```
-
-Este endpoint está pensado para ser consumido directamente por el frontend del portfolio, utilizando un modelo de datos estable y sin mutaciones.
 
 ### Contacto
 
@@ -111,7 +70,7 @@ El chatbot usa una arquitectura híbrida:
 
 ### `GET /api/chat/starters`
 
-Devuelve 4 preguntas sugeridas iniciales.
+Devuelve 2 preguntas sugeridas iniciales.
 
 Ejemplo:
 
@@ -119,9 +78,7 @@ Ejemplo:
 {
   "suggestedQuestions": [
     "¿Quién sos y a qué te dedicás?",
-    "¿Qué tecnologías usás?",
-    "¿Qué proyecto destacás?",
-    "¿Cuál es tu experiencia laboral?"
+    "¿Qué tecnologías usás?"
   ]
 }
 ```

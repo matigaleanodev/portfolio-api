@@ -9,8 +9,7 @@ describe('FaqService', () => {
 
   const execMock = jest.fn();
   const leanMock = jest.fn(() => ({ exec: execMock }));
-  const limitMock = jest.fn(() => ({ lean: leanMock, exec: execMock }));
-  const sortMock = jest.fn(() => ({ lean: leanMock, limit: limitMock }));
+  const sortMock = jest.fn(() => ({ lean: leanMock }));
   const findMock = jest.fn(() => ({ sort: sortMock, lean: leanMock }));
   const updateExecMock = jest.fn();
   const updateOneMock = jest.fn(() => ({ exec: updateExecMock }));
@@ -58,31 +57,5 @@ describe('FaqService', () => {
     ).toBeTruthy();
     expect(findMock.mock.calls[1]?.[0]).toEqual({ active: true });
     expect(result?._id).toEqual(targetId);
-  });
-
-  it('arma starters con fijas y dinámicas sin duplicar', async () => {
-    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
-
-    execMock
-      .mockResolvedValueOnce([
-        { question: '¿Quién sos y a qué te dedicás?' },
-        { question: '¿Qué tecnologías usás?' },
-      ])
-      .mockResolvedValueOnce([
-        { question: '¿Qué tecnologías usás?' },
-        { question: '¿Qué proyecto destacás?' },
-        { question: '¿Cómo puedo contactarte?' },
-      ]);
-
-    const result = await service.getStarterQuestions(4);
-
-    expect(result).toEqual([
-      '¿Quién sos y a qué te dedicás?',
-      '¿Qué tecnologías usás?',
-      '¿Qué proyecto destacás?',
-      '¿Cómo puedo contactarte?',
-    ]);
-
-    randomSpy.mockRestore();
   });
 });
