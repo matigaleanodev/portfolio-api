@@ -6,9 +6,7 @@ import { SubscriptionResponse } from './subscriptions.types';
 
 @Controller('subscriptions')
 export class SubscriptionsController {
-  constructor(
-    private readonly subscriptionsService: SubscriptionsService,
-  ) {}
+  constructor(private readonly subscriptionsService: SubscriptionsService) {}
 
   @Post()
   @HttpCode(200)

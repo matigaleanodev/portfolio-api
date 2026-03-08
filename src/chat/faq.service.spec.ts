@@ -11,7 +11,7 @@ describe('FaqService', () => {
       providers: [FaqService],
     }).compile();
 
-    service = moduleRef.get(FaqService);
+    service = moduleRef.get<FaqService>(FaqService);
   });
 
   it('busca coincidencias sobre las FAQs versionadas locales', async () => {
@@ -24,11 +24,8 @@ describe('FaqService', () => {
   it('resuelve entradas de sistema sin depender de Mongo', async () => {
     const result = await service.getSystemEntry('fallback');
 
-    expect(result).toEqual(
-      expect.objectContaining({
-        answer: expect.stringContaining('No tengo esa información'),
-        suggestedQuestions: expect.any(Array),
-      }),
-    );
+    expect(result).not.toBeNull();
+    expect(result?.answer).toContain('No tengo esa información');
+    expect(Array.isArray(result?.suggestedQuestions)).toBe(true);
   });
 });

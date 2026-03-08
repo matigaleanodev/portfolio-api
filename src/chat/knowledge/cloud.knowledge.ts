@@ -11,7 +11,13 @@ export const CLOUD_KNOWLEDGE_ITEMS: readonly KnowledgeContextItem[] = [
       '`portfolio-api` conserva contacto y chatbot.',
       '`portfolio-cloud` concentra automatización serverless, OpenGraph, suscripciones y procesamiento post-publicación.',
     ].join(' '),
-    tags: ['cloud', 'architecture', 'portfolio', 'portfolio-cloud', 'serverless'],
+    tags: [
+      'cloud',
+      'architecture',
+      'portfolio',
+      'portfolio-cloud',
+      'serverless',
+    ],
   },
   {
     sourceType: 'cloud',
@@ -21,7 +27,14 @@ export const CLOUD_KNOWLEDGE_ITEMS: readonly KnowledgeContextItem[] = [
       'Se implementaron Lambdas dedicadas para `generate-og`, `notify-post`, `subscribe`, `unsubscribe` y `process-release` dentro de `portfolio-cloud`.',
       'El enfoque fue mantener handlers chicos, servicios compartidos para proveedores y contratos idempotentes para los flujos editoriales.',
     ].join(' '),
-    tags: ['aws', 'lambda', 'serverless', 'portfolio-cloud', 'og', 'subscriptions'],
+    tags: [
+      'aws',
+      'lambda',
+      'serverless',
+      'portfolio-cloud',
+      'og',
+      'subscriptions',
+    ],
   },
   {
     sourceType: 'cloud',
@@ -43,7 +56,14 @@ export const CLOUD_KNOWLEDGE_ITEMS: readonly KnowledgeContextItem[] = [
       'Luego `process-release` detecta posts nuevos, dispara la generación de OpenGraph y envía notificaciones a suscriptores.',
       'La intención es mantener ese flujo desacoplado del backend principal para que `portfolio-api` no se convierta en CMS ni en orquestador editorial.',
     ].join(' '),
-    tags: ['cloud', 'release', 'blog', 'event-driven', 'notifications', 'manifest'],
+    tags: [
+      'cloud',
+      'release',
+      'blog',
+      'event-driven',
+      'notifications',
+      'manifest',
+    ],
   },
   {
     sourceType: 'cloud',

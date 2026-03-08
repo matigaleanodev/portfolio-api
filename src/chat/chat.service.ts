@@ -31,8 +31,10 @@ export class ChatService {
     private readonly openAiService: OpenAiService,
   ) {}
 
-  async getStarters(): Promise<ChatStartersResponseDto> {
-    return { suggestedQuestions: [...CHAT_DEFAULT_STARTERS] };
+  getStarters(): Promise<ChatStartersResponseDto> {
+    return Promise.resolve({
+      suggestedQuestions: [...CHAT_DEFAULT_STARTERS],
+    });
   }
 
   async reply(dto: ChatRequestDto): Promise<ChatResponseDto> {
@@ -188,10 +190,7 @@ export class ChatService {
         '¿Qué proyecto destacás de tu portfolio?',
         '¿Qué tecnologías usás actualmente?',
       ],
-      profile: [
-        '¿Cuál es tu experiencia laboral?',
-        '¿Cómo puedo contactarte?',
-      ],
+      profile: ['¿Cuál es tu experiencia laboral?', '¿Cómo puedo contactarte?'],
       project: [
         '¿Qué tecnologías usaste en ese proyecto?',
         '¿Qué links públicos tiene ese proyecto?',

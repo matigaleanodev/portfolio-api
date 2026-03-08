@@ -49,7 +49,14 @@ describe('runtime.config', () => {
 
       expect(paths).toEqual([
         path.resolve('/app', '.generated', 'chat', 'knowledge.json'),
-        path.resolve('/app', '..', 'portfolio', '.generated', 'chat', 'knowledge.json'),
+        path.resolve(
+          '/app',
+          '..',
+          'portfolio',
+          '.generated',
+          'chat',
+          'knowledge.json',
+        ),
       ]);
       expect(getPrimaryEditorialKnowledgePath('/app')).toBe(
         path.resolve('/app', '.generated', 'chat', 'knowledge.json'),

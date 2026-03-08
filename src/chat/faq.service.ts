@@ -12,7 +12,7 @@ export interface ChatSystemEntry {
 
 @Injectable()
 export class FaqService {
-  async findBestMatch(question: string): Promise<ChatFaqEntry | null> {
+  findBestMatch(question: string): Promise<ChatFaqEntry | null> {
     const normalizedQuestion = this.normalize(question);
     const keywordTokens = [...new Set(normalizedQuestion.split(' '))]
       .filter((token) => token.length >= 3)
@@ -51,26 +51,27 @@ export class FaqService {
       }
     }
 
-    return bestScore >= 0.75 ? bestMatch : null;
+    return Promise.resolve(bestScore >= 0.75 ? bestMatch : null);
   }
 
-  async incrementUsage(_faqId: string): Promise<void> {
+  incrementUsage(faqId: string): Promise<void> {
+    void faqId;
     return Promise.resolve();
   }
 
-  async getSystemEntry(key: ChatSystemEntryKey): Promise<ChatSystemEntry | null> {
+  getSystemEntry(key: ChatSystemEntryKey): Promise<ChatSystemEntry | null> {
     const entry = CHAT_FAQ_ITEMS.find(
       (faq) => faq.active && (faq.tags ?? []).includes(`system:${key}`),
     );
 
     if (!entry) {
-      return null;
+      return Promise.resolve(null);
     }
 
-    return {
+    return Promise.resolve({
       answer: entry.answer ?? '',
       suggestedQuestions: (entry.suggestedQuestions ?? []).filter(Boolean),
-    };
+    });
   }
 
   buildFollowUpSuggestions(faq: ChatFaqEntry, limit = 2): string[] {

@@ -82,8 +82,10 @@ describe('KnowledgeService', () => {
           excerpt: 'Post sobre deploy de APIs NestJS con Docker y EC2.',
           date: '2026-03-02',
           tags: ['docker', 'aws', 'ec2'],
-          canonicalUrl: 'https://matiasgaleano.dev/blog/desplegar-apis-docker-ec2',
-          summary: 'Explica el criterio operativo para deploy con Docker Compose.',
+          canonicalUrl:
+            'https://matiasgaleano.dev/blog/desplegar-apis-docker-ec2',
+          summary:
+            'Explica el criterio operativo para deploy con Docker Compose.',
           searchText: 'docker aws ec2 deploy compose portfolio api',
         },
       ],

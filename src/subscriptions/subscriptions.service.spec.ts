@@ -44,10 +44,11 @@ describe('SubscriptionsService', () => {
     fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({
-        message: 'Subscribed successfully',
-        email: 'test@example.com',
-      }),
+      json: () =>
+        Promise.resolve({
+          message: 'Subscribed successfully',
+          email: 'test@example.com',
+        }),
     } as Response);
 
     await expect(
@@ -70,9 +71,10 @@ describe('SubscriptionsService', () => {
     fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({
-        message: 'Already unsubscribed',
-      }),
+      json: () =>
+        Promise.resolve({
+          message: 'Already unsubscribed',
+        }),
     } as Response);
 
     await expect(
@@ -95,9 +97,10 @@ describe('SubscriptionsService', () => {
     fetchMock.mockResolvedValue({
       ok: false,
       status: 400,
-      json: async () => ({
-        error: 'Invalid email',
-      }),
+      json: () =>
+        Promise.resolve({
+          error: 'Invalid email',
+        }),
     } as Response);
 
     await expect(
@@ -109,9 +112,10 @@ describe('SubscriptionsService', () => {
     fetchMock.mockResolvedValue({
       ok: false,
       status: 500,
-      json: async () => ({
-        error: 'Internal error',
-      }),
+      json: () =>
+        Promise.resolve({
+          error: 'Internal error',
+        }),
     } as Response);
 
     await expect(
@@ -123,9 +127,10 @@ describe('SubscriptionsService', () => {
     fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({
-        email: 'test@example.com',
-      }),
+      json: () =>
+        Promise.resolve({
+          email: 'test@example.com',
+        }),
     } as Response);
 
     await expect(

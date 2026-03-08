@@ -1,7 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-export function parseCorsOrigins(value: string | undefined): string[] | boolean {
+export function parseCorsOrigins(
+  value: string | undefined,
+): string[] | boolean {
   const normalized = value?.trim();
 
   if (!normalized) {
@@ -44,7 +46,14 @@ export function getEditorialKnowledgeCandidatePaths(
 ): string[] {
   return [
     path.resolve(cwd, '.generated', 'chat', 'knowledge.json'),
-    path.resolve(cwd, '..', 'portfolio', '.generated', 'chat', 'knowledge.json'),
+    path.resolve(
+      cwd,
+      '..',
+      'portfolio',
+      '.generated',
+      'chat',
+      'knowledge.json',
+    ),
   ];
 }
 
@@ -71,7 +80,9 @@ export function getPortfolioCloudApiBaseUrl(
   const rawValue = env.PORTFOLIO_CLOUD_API_URL?.trim();
 
   if (!rawValue) {
-    throw new Error('Missing required environment variable: PORTFOLIO_CLOUD_API_URL');
+    throw new Error(
+      'Missing required environment variable: PORTFOLIO_CLOUD_API_URL',
+    );
   }
 
   return rawValue.replace(/\/+$/, '');
