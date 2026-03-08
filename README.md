@@ -5,6 +5,13 @@ API backend del portfolio personal con:
 - formulario de contacto
 - chatbot híbrido (FAQ + conocimiento curado local + artifacts editoriales + OpenAI)
 
+Contrato público actual:
+
+- `GET /api/health`
+- `POST /api/contact`
+- `GET /api/chat/starters`
+- `POST /api/chat`
+
 ## ✨ Features
 
 - Endpoint público de contacto
@@ -109,10 +116,12 @@ Respuesta:
 
 `source` puede ser: `faq`, `ai` o `fallback`.
 
-## 🛡️ Anti-spam
+## 🛡️ Protecciones
 
 - **Honeypot**: campo oculto (`company`). Si viene con valor, se ignora el envío (respuesta igual OK).
-- **Rate limit**: 5 requests por hora por IP (solo en el módulo de contacto).
+- **Rate limit global liviano**: 60 requests por minuto por IP para endpoints públicos.
+- **Rate limit de contacto**: 5 requests por hora por IP en `POST /api/contact`.
+- **Rate limit de chat**: 20 requests por minuto por IP para `GET /api/chat/starters` y `POST /api/chat`.
 
 ## ⚙️ Variables de entorno
 

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ChatRequestDto,
   ChatResponseDto,
@@ -7,6 +8,12 @@ import {
 import { ChatService } from './chat.service';
 
 @Controller('chat')
+@Throttle({
+  default: {
+    ttl: 60 * 1000,
+    limit: 20,
+  },
+})
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
