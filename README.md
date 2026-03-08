@@ -122,6 +122,15 @@ Respuesta:
 - **Rate limit global liviano**: 60 requests por minuto por IP para endpoints públicos.
 - **Rate limit de contacto**: 5 requests por hora por IP en `POST /api/contact`.
 - **Rate limit de chat**: 20 requests por minuto por IP para `GET /api/chat/starters` y `POST /api/chat`.
+- **Límites de payload**: parser JSON y urlencoded limitados a `16kb`.
+- **Headers básicos**: `X-Content-Type-Options`, `X-Frame-Options` y `Referrer-Policy`.
+- **DTO validation estricta**: whitelist activa, rechazo de propiedades no permitidas y corte en el primer error.
+
+Estado actual frente a abuso y ataques comunes:
+
+- Bien cubierto frente a abuso trivial por payloads inválidos, bodies grandes y ráfagas simples por IP.
+- Aceptable para un portfolio público chico detrás de reverse proxy.
+- Todavía pendiente de endurecer frente a ataques más serios o distribuidos: WAF/CDN, reputación IP, CAPTCHA o anti-bot dedicado, observabilidad centralizada y políticas de bloqueo más finas.
 
 ## ⚙️ Variables de entorno
 
@@ -133,6 +142,7 @@ Crear un archivo `.env` basado en `.env.example`:
 - `CONTACT_FROM_EMAIL`: email “from” (dominio verificado)
 - `CONTACT_TO_EMAIL`: email destino (tu inbox)
 - `CORS_ORIGIN`: origen permitido (ej: `https://matiasgaleano.dev`)
+- `TRUST_PROXY`: cantidad de proxies confiables delante de Express (ej: `1` detrás de Traefik o Nginx)
 - `OPENAI_API_KEY`: API key de OpenAI (para el chatbot)
 - `OPENAI_CHAT_MODEL`: modelo de chat (default: `gpt-4.1-mini`)
 - `CHAT_EDITORIAL_KNOWLEDGE_PATH`: ruta opcional al artifact generado por `portfolio` en `.generated/chat/knowledge.json`
