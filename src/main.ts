@@ -2,9 +2,15 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { parseCorsOrigins, parseTrustProxy } from './config/runtime.config';
+import { Response } from 'express';
+import {
+  parseCorsOrigins,
+  parseTrustProxy,
+  validateRuntimeConfiguration,
+} from './config/runtime.config';
 
 async function bootstrap() {
+  await validateRuntimeConfiguration();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.setGlobalPrefix('api');
@@ -21,7 +27,7 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type'],
   });
 
-  app.use((req: unknown, res: any, next: () => void) => {
+  app.use((req: unknown, res: Response, next: () => void) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'no-referrer');

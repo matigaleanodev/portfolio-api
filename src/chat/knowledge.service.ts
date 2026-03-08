@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import {
   CHAT_BLOG_TOPIC_TERMS,
   CHAT_CLOUD_TOPIC_TERMS,
   CHAT_PROFILE_TOPIC_TERMS,
   CHAT_PROJECT_TOPIC_TERMS,
 } from './chat-content.config';
+import { resolveExistingEditorialKnowledgePath } from '../config/runtime.config';
 import { CLOUD_KNOWLEDGE_ITEMS } from './knowledge/cloud.knowledge';
 import { PROFILE_KNOWLEDGE_ITEMS } from './knowledge/profile.knowledge';
 import { KnowledgeContextItem, KnowledgeLink } from './chat.types';
@@ -116,25 +116,9 @@ export class KnowledgeService {
   }
 
   private async resolveEditorialKnowledgePath(): Promise<string | null> {
-    const candidatePaths = [
-      path.resolve(process.cwd(), '.generated', 'chat', 'knowledge.json'),
-      path.resolve(
-        process.cwd(),
-        '..',
-        'portfolio',
-        '.generated',
-        'chat',
-        'knowledge.json',
-      ),
-    ];
-
-    for (const candidatePath of candidatePaths) {
-      try {
-        await fs.access(candidatePath);
-        return candidatePath;
-      } catch {
-        continue;
-      }
+    const existingPath = await resolveExistingEditorialKnowledgePath();
+    if (existingPath) {
+      return existingPath;
     }
 
     if (!this.missingEditorialPathLogged) {

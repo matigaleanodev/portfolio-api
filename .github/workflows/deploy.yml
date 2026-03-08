@@ -55,6 +55,8 @@ jobs:
 
             sed -i "s|^IMAGE=.*$|IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}|g" .env
 
+            test -f .generated/chat/knowledge.json || (echo "Missing .generated/chat/knowledge.json in ${{ env.APP_DIR }}. Sync the artifact from portfolio before deploying portfolio-api." && exit 1)
+
             docker compose pull
             docker compose up -d
             docker image prune -f

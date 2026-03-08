@@ -151,6 +151,7 @@ El conocimiento curado del chatbot vive versionado en `src/chat/knowledge/`.
 El conocimiento editorial de proyectos y blog se genera desde el repo `portfolio`.
 En runtime, la API busca ese artifact en `.generated/chat/knowledge.json` dentro de su propio directorio de trabajo.
 En desarrollo local mantiene un fallback al repo hermano `../portfolio/.generated/chat/knowledge.json`.
+En produccion, el deploy debe entregar ese archivo exactamente en `portfolio-api/.generated/chat/knowledge.json`.
 
 ## 🖥️ Run locally
 
@@ -181,3 +182,12 @@ Lint:
 ```bash
 npm run lint
 ```
+
+## Deploy
+
+El deploy productivo de `portfolio-api` debe cumplir dos condiciones antes de iniciar la app:
+
+- `RESEND_API_KEY`, `CONTACT_FROM_EMAIL` y `CONTACT_TO_EMAIL` deben existir
+- `.generated/chat/knowledge.json` debe estar presente en el directorio operativo del backend
+
+Si falta ese artifact editorial, el workflow de deploy y el arranque en `NODE_ENV=production` deben fallar para evitar un runtime degradado silenciosamente.
