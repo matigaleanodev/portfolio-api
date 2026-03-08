@@ -251,3 +251,7 @@ El deploy productivo de `portfolio-api` debe cumplir dos condiciones antes de in
 - debe existir configuracion valida de R2 para el knowledge del chat o, como contingencia, `.generated/chat/knowledge.json` en el directorio operativo del backend
 
 Si falta tanto R2 como el artifact local de contingencia, el arranque en `NODE_ENV=production` debe fallar para evitar un runtime degradado silenciosamente.
+
+El workflow de deploy ya no sincroniza `.generated/chat/knowledge.json` hacia EC2 como paso operativo.
+En el esquema actual, el runtime productivo debe resolver el knowledge del chat directamente desde R2.
+El fallback local a filesystem queda solo como contingencia tecnica y soporte de desarrollo, no como parte del handoff normal de release.
