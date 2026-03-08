@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Project, ProjectSchema } from '../projects/projects.schema';
 import { ChatController } from './chat.controller';
 import { ChatFaq, ChatFaqSchema } from './chat-faq.schema';
 import {
@@ -17,7 +16,6 @@ import { OpenAiService } from './openai.service';
     MongooseModule.forFeature([
       { name: ChatFaq.name, schema: ChatFaqSchema },
       { name: ChatQuestionLog.name, schema: ChatQuestionLogSchema },
-      { name: Project.name, schema: ProjectSchema },
     ]),
   ],
   controllers: [ChatController],

@@ -4,7 +4,7 @@ API backend del portfolio personal con:
 
 - formulario de contacto
 - endpoint público de proyectos
-- chatbot híbrido (FAQ + contexto Mongo + OpenAI)
+- chatbot híbrido (FAQ + conocimiento curado local + artifacts editoriales + OpenAI)
 
 ## ✨ Features
 
@@ -12,7 +12,9 @@ API backend del portfolio personal con:
 - Endpoint público de proyectos
 - Chatbot híbrido con sugerencias de preguntas
 - Starters del chat (`GET /api/chat/starters`)
-- FAQ + contexto de perfil seedable en MongoDB
+- FAQ seedable en MongoDB
+- Conocimiento curado versionado para perfil y arquitectura cloud
+- Artifact editorial para proyectos y blog generado desde `portfolio`
 - Validaciones con `class-validator`
 - Anti-spam con **honeypot** y **rate limiting**
 - Envío de emails vía **Resend**
@@ -102,9 +104,10 @@ Respuesta esperada:
 
 El chatbot usa una arquitectura híbrida:
 
-- `FAQ -> contexto Mongo (projects + profile_context) -> OpenAI -> fallback`
+- `FAQ -> conocimiento curado local + artifact editorial -> OpenAI -> fallback`
 - Responde con `answer` + `suggestedQuestions`
 - Incluye preguntas sugeridas iniciales para arrancar la conversación
+- Puede responder sobre proyectos, blog, stack y arquitectura reciente del ecosistema `portfolio`
 
 ### `GET /api/chat/starters`
 
@@ -166,6 +169,7 @@ Crear un archivo `.env` basado en `.env.example`:
 - `CORS_ORIGIN`: origen permitido (ej: `https://matiasgaleano.dev`)
 - `OPENAI_API_KEY`: API key de OpenAI (para el chatbot)
 - `OPENAI_CHAT_MODEL`: modelo de chat (default: `gpt-4.1-mini`)
+- `CHAT_EDITORIAL_KNOWLEDGE_PATH`: ruta opcional al artifact generado por `portfolio` en `.generated/chat/knowledge.json`
 - `PORT`: puerto de la API (default: `3000`)
 
 ## 🌱 Seed de chatbot
@@ -179,7 +183,9 @@ npm run seed:chat
 El seed carga:
 
 - FAQs del chatbot (`faqs`)
-- contexto de perfil (`profile_context`)
+
+El conocimiento curado del chatbot ahora vive versionado en `src/chat/knowledge/`.
+El conocimiento editorial de proyectos y blog se genera desde el repo `portfolio`.
 
 ## 🖥️ Run locally
 

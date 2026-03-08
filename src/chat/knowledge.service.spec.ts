@@ -1,100 +1,122 @@
-import { Test } from '@nestjs/testing';
-import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
-import { Project } from '../projects/projects.schema';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { KnowledgeService } from './knowledge.service';
 
 describe('KnowledgeService', () => {
-  let service: KnowledgeService;
+  const originalEditorialPath = process.env.CHAT_EDITORIAL_KNOWLEDGE_PATH;
 
-  const execMock = jest.fn();
-  const leanMock = jest.fn(() => ({ exec: execMock }));
-  const limitMock = jest.fn(() => ({ lean: leanMock }));
-  const sortMock = jest.fn(() => ({ limit: limitMock }));
-  const findProjectsMock = jest.fn(() => ({ sort: sortMock }));
-
-  const projectModelMock = {
-    find: findProjectsMock,
-  };
-
-  const toArrayMock = jest.fn();
-  const profileLimitMock = jest.fn(() => ({ toArray: toArrayMock }));
-  const profileFindMock = jest.fn(() => ({ limit: profileLimitMock }));
-  const collectionMock = jest.fn(() => ({ find: profileFindMock }));
-
-  const connectionMock = {
-    collection: collectionMock,
-  };
-
-  beforeEach(async () => {
-    jest.clearAllMocks();
-
-    const moduleRef = await Test.createTestingModule({
-      providers: [
-        KnowledgeService,
-        { provide: getModelToken(Project.name), useValue: projectModelMock },
-        { provide: getConnectionToken(), useValue: connectionMock },
-      ],
-    }).compile();
-
-    service = moduleRef.get(KnowledgeService);
+  afterEach(async () => {
+    if (originalEditorialPath === undefined) {
+      delete process.env.CHAT_EDITORIAL_KNOWLEDGE_PATH;
+    } else {
+      process.env.CHAT_EDITORIAL_KNOWLEDGE_PATH = originalEditorialPath;
+    }
   });
 
-  it('prioriza contexto de profile_context cuando coincide mejor con la pregunta', async () => {
-    execMock.mockResolvedValue([
-      {
-        _id: '1',
-        name: 'Portfolio',
-        description: 'API con contacto y proyectos',
-        technologies: ['NestJS', 'MongoDB'],
-      },
-    ]);
-    toArrayMock.mockResolvedValue([
-      {
-        sourceType: 'profile',
-        sourceId: 'main-projects',
-        title: 'Proyectos del portfolio',
-        text: 'Foodly Notes está publicado en Google Play Store.',
-        tags: ['foodly-notes', 'play', 'store'],
-      },
-    ]);
+  it('prioriza el artifact editorial cuando coincide mejor con la pregunta', async () => {
+    const artifactPath = await writeKnowledgeArtifact({
+      generatedAt: new Date().toISOString(),
+      projects: [
+        {
+          slug: 'foodly-notes',
+          title: 'Foodly Notes',
+          excerpt: 'App de recetas publicada en Google Play Store.',
+          stack: ['Angular', 'Ionic', 'NestJS'],
+          links: [
+            {
+              label: 'Play Store',
+              url: 'https://play.google.com/store/apps/details?id=io.example',
+            },
+          ],
+          highlights: ['Publicada en Google Play Store.'],
+          searchText: 'foodly notes play store angular ionic nestjs',
+        },
+      ],
+      posts: [],
+    });
 
+    process.env.CHAT_EDITORIAL_KNOWLEDGE_PATH = artifactPath;
+
+    const service = new KnowledgeService();
     const result = await service.getRelevantContext(
       'publicaste alguna app en play store',
     );
 
     expect(result[0]).toEqual(
       expect.objectContaining({
-        sourceType: 'profile',
-        sourceId: 'main-projects',
+        sourceType: 'project',
+        sourceId: 'foodly-notes',
+        links: [
+          expect.objectContaining({
+            label: 'Play Store',
+          }),
+        ],
       }),
     );
   });
 
-  it('devuelve fallback de contexto cuando no hay matches', async () => {
-    execMock.mockResolvedValue([
-      {
-        _id: '1',
-        name: 'Portfolio',
-        description: 'Sitio personal',
-        technologies: ['Angular'],
-      },
-      {
-        _id: '2',
-        name: 'Foodly Notes',
-        description: 'Recetario',
-        technologies: ['Ionic'],
-      },
-      {
-        _id: '3',
-        name: 'Modo Playa',
-        description: 'Catalogo',
-        technologies: ['NestJS'],
-      },
-    ]);
-    toArrayMock.mockResolvedValue([]);
+  it('responde con conocimiento curado local cuando no hay artifact editorial', async () => {
+    delete process.env.CHAT_EDITORIAL_KNOWLEDGE_PATH;
 
-    const result = await service.getRelevantContext('zzzz qqqq');
+    const service = new KnowledgeService();
+    const result = await service.getRelevantContext(
+      'como esta armado el ecosistema de portfolio cloud',
+    );
 
-    expect(result).toHaveLength(2);
+    expect(result).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceType: 'cloud',
+          sourceId: 'cloud-ecosystem',
+        }),
+      ]),
+    );
+  });
+
+  it('incluye posts del blog dentro del conocimiento editorial', async () => {
+    const artifactPath = await writeKnowledgeArtifact({
+      generatedAt: new Date().toISOString(),
+      projects: [],
+      posts: [
+        {
+          slug: 'desplegar-apis-docker-ec2',
+          title: 'Cómo desplegar APIs con Docker en un EC2',
+          excerpt: 'Post sobre deploy de APIs NestJS con Docker y EC2.',
+          date: '2026-03-02',
+          tags: ['docker', 'aws', 'ec2'],
+          canonicalUrl: 'https://matiasgaleano.dev/blog/desplegar-apis-docker-ec2',
+          summary: 'Explica el criterio operativo para deploy con Docker Compose.',
+          searchText: 'docker aws ec2 deploy compose portfolio api',
+        },
+      ],
+    });
+
+    process.env.CHAT_EDITORIAL_KNOWLEDGE_PATH = artifactPath;
+
+    const service = new KnowledgeService();
+    const result = await service.getRelevantContext(
+      'escribiste algo sobre docker en ec2',
+    );
+
+    expect(result).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceType: 'post',
+          sourceId: 'desplegar-apis-docker-ec2',
+        }),
+      ]),
+    );
   });
 });
+
+async function writeKnowledgeArtifact(
+  payload: Record<string, unknown>,
+): Promise<string> {
+  const directoryPath = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'portfolio-chat-knowledge-'),
+  );
+  const filePath = path.join(directoryPath, 'knowledge.json');
+  await fs.writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`);
+  return filePath;
+}

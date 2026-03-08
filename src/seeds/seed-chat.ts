@@ -2,7 +2,6 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 import { ChatFaq, ChatFaqSchema } from '../chat/chat-faq.schema';
 import { chatFaqSeed } from './chat-faq.seed';
-import { profileContextSeed } from './profile-context.seed';
 
 async function run(): Promise<void> {
   const mongoUri = process.env.MONGO_URI;
@@ -20,11 +19,6 @@ async function run(): Promise<void> {
   try {
     await ChatFaqModel.deleteMany({});
     await ChatFaqModel.insertMany(chatFaqSeed);
-
-    const profileContextCollection =
-      mongoose.connection.collection('profile_context');
-    await profileContextCollection.deleteMany({});
-    await profileContextCollection.insertMany(profileContextSeed);
   } finally {
     await mongoose.connection.close();
   }
