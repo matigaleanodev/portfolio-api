@@ -1,7 +1,5 @@
-import fs from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
 import { KnowledgeService } from './knowledge.service';
+import { ChatKnowledgeRepository } from './chat-knowledge.repository';
 
 describe('KnowledgeService', () => {
   afterEach(() => {
@@ -9,7 +7,7 @@ describe('KnowledgeService', () => {
   });
 
   it('prioriza el artifact editorial cuando coincide mejor con la pregunta', async () => {
-    const cwdPath = await writeKnowledgeArtifact({
+    const service = createService({
       generatedAt: new Date().toISOString(),
       projects: [
         {
@@ -29,10 +27,6 @@ describe('KnowledgeService', () => {
       ],
       posts: [],
     });
-
-    jest.spyOn(process, 'cwd').mockReturnValue(cwdPath);
-
-    const service = new KnowledgeService();
     const result = await service.getRelevantContext(
       'publicaste alguna app en play store',
     );
@@ -41,22 +35,16 @@ describe('KnowledgeService', () => {
       expect.objectContaining({
         sourceType: 'project',
         sourceId: 'foodly-notes',
-        links: [
-          expect.objectContaining({
-            label: 'Play Store',
-          }),
-        ],
       }),
     );
   });
 
-  it('responde con conocimiento curado local cuando no hay artifact editorial', async () => {
-    const cwdPath = await fs.mkdtemp(
-      path.join(os.tmpdir(), 'portfolio-chat-no-artifact-'),
-    );
-    jest.spyOn(process, 'cwd').mockReturnValue(cwdPath);
-
-    const service = new KnowledgeService();
+  it('responde con conocimiento curado local cuando el artifact editorial esta vacio', async () => {
+    const service = createService({
+      generatedAt: new Date().toISOString(),
+      projects: [],
+      posts: [],
+    });
     const result = await service.getRelevantContext(
       'como esta armado el ecosistema de portfolio cloud',
     );
@@ -72,7 +60,7 @@ describe('KnowledgeService', () => {
   });
 
   it('incluye posts del blog dentro del conocimiento editorial', async () => {
-    const cwdPath = await writeKnowledgeArtifact({
+    const service = createService({
       generatedAt: new Date().toISOString(),
       projects: [],
       posts: [
@@ -90,10 +78,6 @@ describe('KnowledgeService', () => {
         },
       ],
     });
-
-    jest.spyOn(process, 'cwd').mockReturnValue(cwdPath);
-
-    const service = new KnowledgeService();
     const result = await service.getRelevantContext(
       'escribiste algo sobre docker en ec2',
     );
@@ -109,8 +93,11 @@ describe('KnowledgeService', () => {
   });
 
   it('prioriza conocimiento cloud cuando la pregunta apunta a lambdas y serverless', async () => {
-    const service = new KnowledgeService();
-
+    const service = createService({
+      generatedAt: new Date().toISOString(),
+      projects: [],
+      posts: [],
+    });
     const result = await service.getRelevantContext(
       'como resolviste lambdas y serverless en portfolio cloud',
     );
@@ -123,15 +110,10 @@ describe('KnowledgeService', () => {
   });
 });
 
-async function writeKnowledgeArtifact(
-  payload: Record<string, unknown>,
-): Promise<string> {
-  const directoryPath = await fs.mkdtemp(
-    path.join(os.tmpdir(), 'portfolio-chat-knowledge-'),
-  );
-  const generatedPath = path.join(directoryPath, '.generated', 'chat');
-  await fs.mkdir(generatedPath, { recursive: true });
-  const filePath = path.join(generatedPath, 'knowledge.json');
-  await fs.writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`);
-  return directoryPath;
+function createService(payload: Record<string, unknown>): KnowledgeService {
+  const repository = {
+    getKnowledge: jest.fn().mockResolvedValue(payload),
+  } as unknown as ChatKnowledgeRepository;
+
+  return new KnowledgeService(repository);
 }

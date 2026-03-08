@@ -191,6 +191,13 @@ Crear un archivo `.env` basado en `.env.example`:
 - `CORS_ORIGIN`: origen permitido (ej: `https://matiasgaleano.dev`)
 - `TRUST_PROXY`: cantidad de proxies confiables delante de Express (ej: `1` detrás de Traefik o Nginx)
 - `PORTFOLIO_CLOUD_API_URL`: base URL pública de `portfolio-cloud` para delegar suscripciones
+- `R2_ENDPOINT`: endpoint S3-compatible de Cloudflare R2
+- `R2_REGION`: región del cliente S3-compatible (default: `auto`)
+- `R2_BUCKET`: bucket donde `portfolio-cloud` publica el artifact canónico del chat
+- `R2_ACCESS_KEY_ID`: credencial de acceso a R2
+- `R2_SECRET_ACCESS_KEY`: secreto de acceso a R2
+- `CHAT_KNOWLEDGE_OBJECT_KEY`: key del objeto del knowledge del chat en R2 (default: `artifacts/chat/knowledge.json`)
+- `CHAT_KNOWLEDGE_CACHE_TTL_MS`: TTL en milisegundos del cache en memoria del knowledge remoto (default: `300000`)
 - `OPENAI_API_KEY`: API key de OpenAI (para el chatbot)
 - `OPENAI_CHAT_MODEL`: modelo de chat (default: `gpt-4.1-mini`)
 - `PORT`: puerto de la API (default: `3000`)
@@ -200,9 +207,10 @@ Crear un archivo `.env` basado en `.env.example`:
 Las FAQs del chatbot viven versionadas en `src/chat/content/chat-faq.data.ts`.
 El conocimiento curado del chatbot vive versionado en `src/chat/knowledge/`.
 El conocimiento editorial de proyectos y blog se genera desde el repo `portfolio`.
-En runtime, la API busca ese artifact en `.generated/chat/knowledge.json` dentro de su propio directorio de trabajo.
-En desarrollo local mantiene un fallback al repo hermano `../portfolio/.generated/chat/knowledge.json`.
-En produccion, el deploy debe entregar ese archivo exactamente en `portfolio-api/.generated/chat/knowledge.json`.
+La copia canónica cloud la publica `portfolio-cloud` en R2 como un envelope que contiene `knowledge`.
+En runtime, `portfolio-api` resuelve primero ese envelope directo desde R2 usando un cliente S3-compatible, extrae `knowledge` y lo cachea en memoria por TTL.
+Si R2 falla y existe cache previo, reutiliza el ultimo snapshot en memoria.
+Si no hay cache remoto disponible, mantiene un fallback local a `.generated/chat/knowledge.json` en el repo actual o en `../portfolio/.generated/chat/knowledge.json` para desarrollo y contingencia.
 
 ## 🖥️ Run locally
 
@@ -239,6 +247,6 @@ npm run lint
 El deploy productivo de `portfolio-api` debe cumplir dos condiciones antes de iniciar la app:
 
 - `RESEND_API_KEY`, `CONTACT_FROM_EMAIL`, `CONTACT_TO_EMAIL` y `PORTFOLIO_CLOUD_API_URL` deben existir
-- `.generated/chat/knowledge.json` debe estar presente en el directorio operativo del backend
+- debe existir configuracion valida de R2 para el knowledge del chat o, como contingencia, `.generated/chat/knowledge.json` en el directorio operativo del backend
 
-Si falta ese artifact editorial, el workflow de deploy y el arranque en `NODE_ENV=production` deben fallar para evitar un runtime degradado silenciosamente.
+Si falta tanto R2 como el artifact local de contingencia, el arranque en `NODE_ENV=production` debe fallar para evitar un runtime degradado silenciosamente.
