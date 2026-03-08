@@ -1,10 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import {
-  ChatQuestionLog,
-  ChatQuestionLogDocument,
-} from './chat-question-log.schema';
 import {
   ChatRequestDto,
   ChatResponseDto,
@@ -35,8 +29,6 @@ export class ChatService {
     private readonly faqService: FaqService,
     private readonly knowledgeService: KnowledgeService,
     private readonly openAiService: OpenAiService,
-    @InjectModel(ChatQuestionLog.name)
-    private readonly questionLogModel: Model<ChatQuestionLogDocument>,
   ) {}
 
   async getStarters(): Promise<ChatStartersResponseDto> {
@@ -50,14 +42,13 @@ export class ChatService {
         CHAT_DEFAULT_OUT_OF_SCOPE_ANSWER,
         CHAT_DEFAULT_OUT_OF_SCOPE_SUGGESTED_QUESTIONS,
       );
-      await this.logQuestion(dto, outOfScopeResponse.source);
       return outOfScopeResponse;
     }
 
     const faqMatch = await this.faqService.findBestMatch(dto.message);
 
-    if (faqMatch?._id) {
-      const faqId = faqMatch._id.toHexString();
+    if (faqMatch?.id) {
+      const faqId = faqMatch.id;
       await this.faqService.incrementUsage(faqId);
 
       const faqSuggestions = this.faqService.buildFollowUpSuggestions(faqMatch);
@@ -84,7 +75,6 @@ export class ChatService {
         source: 'faq',
       };
 
-      await this.logQuestion(dto, response.source, faqId);
       return response;
     }
 
@@ -114,7 +104,6 @@ export class ChatService {
         source: 'ai',
       };
 
-      await this.logQuestion(dto, response.source);
       return response;
     }
 
@@ -122,7 +111,6 @@ export class ChatService {
       const contextualFallback = this.buildContextualFallbackResponse(
         contextItems[0],
       );
-      await this.logQuestion(dto, contextualFallback.source);
       return contextualFallback;
     }
 
@@ -132,7 +120,6 @@ export class ChatService {
       CHAT_DEFAULT_FALLBACK_SUGGESTED_QUESTIONS,
     );
 
-    await this.logQuestion(dto, fallbackResponse.source);
     return fallbackResponse;
   }
 
@@ -223,19 +210,6 @@ export class ChatService {
       suggestionsBySource[item.sourceType] ?? [],
       CHAT_DEFAULT_FALLBACK_SUGGESTED_QUESTIONS,
     );
-  }
-
-  private async logQuestion(
-    dto: ChatRequestDto,
-    source: ChatResponseDto['source'],
-    matchedFaqId?: string,
-  ): Promise<void> {
-    await this.questionLogModel.create({
-      question: dto.message,
-      sessionId: dto.sessionId,
-      source,
-      matchedFaqId,
-    });
   }
 
   private isOutOfScopeQuestion(message: string): boolean {

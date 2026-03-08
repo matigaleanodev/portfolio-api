@@ -17,7 +17,7 @@ Contrato público actual:
 - Endpoint público de contacto
 - Chatbot híbrido con sugerencias de preguntas
 - Starters del chat (`GET /api/chat/starters`)
-- FAQ seedable en MongoDB
+- FAQs versionadas en código para respuestas y sugerencias del chatbot
 - Conocimiento curado versionado para perfil y arquitectura cloud
 - Artifact editorial para proyectos y blog generado desde `portfolio`
 - Validaciones con `class-validator`
@@ -29,7 +29,6 @@ Contrato público actual:
 
 - NestJS
 - TypeScript
-- MongoDB + Mongoose
 - Resend
 - OpenAI Responses API
 - Jest
@@ -136,8 +135,6 @@ Estado actual frente a abuso y ataques comunes:
 
 Crear un archivo `.env` basado en `.env.example`:
 
-- `MONGO_URI`: `mongodb+srv://<USER>:<PASSWORD>@portfolio-cluster.mongodb.net/portfolio`
-
 - `RESEND_API_KEY`: API key de Resend
 - `CONTACT_FROM_EMAIL`: email “from” (dominio verificado)
 - `CONTACT_TO_EMAIL`: email destino (tu inbox)
@@ -148,19 +145,10 @@ Crear un archivo `.env` basado en `.env.example`:
 - `CHAT_EDITORIAL_KNOWLEDGE_PATH`: ruta opcional al artifact generado por `portfolio` en `.generated/chat/knowledge.json`
 - `PORT`: puerto de la API (default: `3000`)
 
-## 🌱 Seed de chatbot
+## 📚 Fuente de conocimiento del chatbot
 
-Para poblar FAQs y contexto inicial del chatbot:
-
-```bash
-npm run seed:chat
-```
-
-El seed carga:
-
-- FAQs del chatbot (`faqs`)
-
-El conocimiento curado del chatbot ahora vive versionado en `src/chat/knowledge/`.
+Las FAQs del chatbot viven versionadas en `src/chat/content/chat-faq.data.ts`.
+El conocimiento curado del chatbot vive versionado en `src/chat/knowledge/`.
 El conocimiento editorial de proyectos y blog se genera desde el repo `portfolio`.
 
 ## 🖥️ Run locally

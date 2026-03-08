@@ -1,61 +1,34 @@
 import { Test } from '@nestjs/testing';
-import { getModelToken } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
-import { ChatFaq } from './chat-faq.schema';
 import { FaqService } from './faq.service';
 
 describe('FaqService', () => {
   let service: FaqService;
 
-  const execMock = jest.fn();
-  const leanMock = jest.fn(() => ({ exec: execMock }));
-  const sortMock = jest.fn(() => ({ lean: leanMock }));
-  const findMock = jest.fn(() => ({ sort: sortMock, lean: leanMock }));
-  const updateExecMock = jest.fn();
-  const updateOneMock = jest.fn(() => ({ exec: updateExecMock }));
-
-  const faqModelMock = {
-    find: findMock,
-    updateOne: updateOneMock,
-  };
-
   beforeEach(async () => {
     jest.clearAllMocks();
 
     const moduleRef = await Test.createTestingModule({
-      providers: [
-        FaqService,
-        { provide: getModelToken(ChatFaq.name), useValue: faqModelMock },
-      ],
+      providers: [FaqService],
     }).compile();
 
     service = moduleRef.get(FaqService);
   });
 
-  it('busca por palabras primero y cae a full scan si no hay candidatos', async () => {
-    const targetId = new Types.ObjectId();
-
-    execMock.mockResolvedValueOnce([]).mockResolvedValueOnce([
-      {
-        _id: targetId,
-        question: '¿Qué tecnologías usás?',
-        aliases: ['stack'],
-        answer: 'x',
-        tags: ['skills'],
-      },
-    ]);
-
+  it('busca coincidencias sobre las FAQs versionadas locales', async () => {
     const result = await service.findBestMatch('¿Qué tecnologías usás?');
-    const firstFindQuery = findMock.mock.calls[0]?.[0] as
-      | Record<string, unknown>
-      | undefined;
 
-    expect(findMock).toHaveBeenCalledTimes(2);
-    expect(firstFindQuery).toEqual(expect.objectContaining({ active: true }));
-    expect(
-      Array.isArray((firstFindQuery as { $or?: unknown }).$or),
-    ).toBeTruthy();
-    expect(findMock.mock.calls[1]?.[0]).toEqual({ active: true });
-    expect(result?._id).toEqual(targetId);
+    expect(result?.id).toBe('que-tecnologias-usas');
+    expect(result?.tags).toContain('skills');
+  });
+
+  it('resuelve entradas de sistema sin depender de Mongo', async () => {
+    const result = await service.getSystemEntry('fallback');
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        answer: expect.stringContaining('No tengo esa información'),
+        suggestedQuestions: expect.any(Array),
+      }),
+    );
   });
 });

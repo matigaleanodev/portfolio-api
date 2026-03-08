@@ -1,14 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { ChatFaq, ChatFaqDocument } from './chat-faq.schema';
-
-export type ChatSystemEntryKey =
-  | 'out_of_scope'
-  | 'fallback'
-  | 'starter_fallback'
-  | 'ai_seed'
-  | 'ai_fallback';
+import {
+  CHAT_FAQ_ITEMS,
+  ChatFaqEntry,
+  ChatSystemEntryKey,
+} from './content/chat-faq.data';
 
 export interface ChatSystemEntry {
   answer: string;
@@ -17,14 +12,7 @@ export interface ChatSystemEntry {
 
 @Injectable()
 export class FaqService {
-  constructor(
-    @InjectModel(ChatFaq.name)
-    private readonly faqModel: Model<ChatFaqDocument>,
-  ) {}
-
-  async findBestMatch(
-    question: string,
-  ): Promise<(ChatFaq & { _id: Types.ObjectId }) | null> {
+  async findBestMatch(question: string): Promise<ChatFaqEntry | null> {
     const normalizedQuestion = this.normalize(question);
     const keywordTokens = [...new Set(normalizedQuestion.split(' '))]
       .filter((token) => token.length >= 3)
@@ -32,37 +20,24 @@ export class FaqService {
 
     let activeFaqs =
       keywordTokens.length > 0
-        ? await this.faqModel
-            .find({
-              active: true,
-              $or: [
-                {
-                  question: {
-                    $regex: keywordTokens
-                      .map((token) => this.escapeRegex(token))
-                      .join('|'),
-                    $options: 'i',
-                  },
-                },
-                {
-                  aliases: {
-                    $regex: keywordTokens
-                      .map((token) => this.escapeRegex(token))
-                      .join('|'),
-                    $options: 'i',
-                  },
-                },
-              ],
-            })
-            .lean()
-            .exec()
+        ? CHAT_FAQ_ITEMS.filter((faq) => {
+            if (!faq.active) {
+              return false;
+            }
+
+            const haystack = [faq.question, ...(faq.aliases ?? [])]
+              .map((candidate) => this.normalize(candidate))
+              .join(' ');
+
+            return keywordTokens.some((token) => haystack.includes(token));
+          })
         : [];
 
     if (activeFaqs.length === 0) {
-      activeFaqs = await this.faqModel.find({ active: true }).lean().exec();
+      activeFaqs = CHAT_FAQ_ITEMS.filter((faq) => faq.active);
     }
 
-    let bestMatch: (ChatFaq & { _id: Types.ObjectId }) | null = null;
+    let bestMatch: ChatFaqEntry | null = null;
     let bestScore = 0;
 
     for (const faq of activeFaqs) {
@@ -79,20 +54,14 @@ export class FaqService {
     return bestScore >= 0.75 ? bestMatch : null;
   }
 
-  async incrementUsage(faqId: string): Promise<void> {
-    await this.faqModel
-      .updateOne({ _id: faqId }, { $inc: { usageCount: 1 } })
-      .exec();
+  async incrementUsage(_faqId: string): Promise<void> {
+    return Promise.resolve();
   }
 
   async getSystemEntry(key: ChatSystemEntryKey): Promise<ChatSystemEntry | null> {
-    const entry = await this.faqModel
-      .findOne({
-        active: true,
-        tags: { $in: [`system:${key}`] },
-      })
-      .lean()
-      .exec();
+    const entry = CHAT_FAQ_ITEMS.find(
+      (faq) => faq.active && (faq.tags ?? []).includes(`system:${key}`),
+    );
 
     if (!entry) {
       return null;
@@ -104,7 +73,7 @@ export class FaqService {
     };
   }
 
-  buildFollowUpSuggestions(faq: ChatFaq, limit = 2): string[] {
+  buildFollowUpSuggestions(faq: ChatFaqEntry, limit = 2): string[] {
     const own = (faq.suggestedQuestions ?? []).filter(Boolean);
     if (own.length > 0) {
       return own.slice(0, limit);
@@ -154,10 +123,6 @@ export class FaqService {
       .replace(/[^\p{L}\p{N}\s]/gu, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-  }
-
-  private escapeRegex(value: string): string {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   private score(input: string, candidate: string): number {
