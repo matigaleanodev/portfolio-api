@@ -196,8 +196,8 @@ Crear un archivo `.env` basado en `.env.example`:
 - `R2_BUCKET`: bucket donde `portfolio-cloud` publica el artifact canónico del chat
 - `R2_ACCESS_KEY_ID`: credencial de acceso a R2
 - `R2_SECRET_ACCESS_KEY`: secreto de acceso a R2
-- `CHAT_KNOWLEDGE_OBJECT_KEY`: key del objeto del knowledge del chat en R2 (default: `artifacts/chat/knowledge.json`)
-- `CHAT_KNOWLEDGE_CACHE_TTL_MS`: TTL en milisegundos del cache en memoria del knowledge remoto (default: `300000`)
+- `CHAT_KNOWLEDGE_OBJECT_KEY`: key del objeto del knowledge del chat en R2 (opcional, default: `artifacts/chat/knowledge.json`)
+- `CHAT_KNOWLEDGE_CACHE_TTL_MS`: TTL en milisegundos del cache en memoria del knowledge remoto (opcional, default: `300000`)
 - `OPENAI_API_KEY`: API key de OpenAI (para el chatbot)
 - `OPENAI_CHAT_MODEL`: modelo de chat (default: `gpt-4.1-mini`)
 - `PORT`: puerto de la API (default: `3000`)
@@ -211,6 +211,7 @@ La copia canónica cloud la publica `portfolio-cloud` en R2 como un envelope que
 En runtime, `portfolio-api` resuelve primero ese envelope directo desde R2 usando un cliente S3-compatible, extrae `knowledge` y lo cachea en memoria por TTL.
 Si R2 falla y existe cache previo, reutiliza el ultimo snapshot en memoria.
 Si no hay cache remoto disponible, mantiene un fallback local a `.generated/chat/knowledge.json` en el repo actual o en `../portfolio/.generated/chat/knowledge.json` para desarrollo y contingencia.
+La configuracion remota usa `R2_ENDPOINT`, `R2_REGION`, `R2_BUCKET`, `R2_ACCESS_KEY_ID` y `R2_SECRET_ACCESS_KEY`.
 
 ## 🖥️ Run locally
 
