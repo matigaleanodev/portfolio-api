@@ -193,4 +193,34 @@ describe('ChatService', () => {
     );
     expect(openAiServiceMock.generateChatResponse).toHaveBeenCalled();
   });
+
+  it('mantiene flujo contextual para preguntas sobre blog y cloud del portfolio', async () => {
+    faqServiceMock.findBestMatch.mockResolvedValue(null);
+    knowledgeServiceMock.getRelevantContext.mockResolvedValue([
+      {
+        sourceType: 'cloud',
+        sourceId: 'cloud-lambdas',
+        title: 'Experiencia reciente con AWS Lambda',
+        text: 'Se implementaron Lambdas para generate-og y process-release.',
+        tags: ['aws', 'lambda', 'serverless'],
+      },
+    ]);
+    openAiServiceMock.generateChatResponse.mockResolvedValue({
+      answer:
+        'En portfolio-cloud resolví Lambdas dedicadas para generate-og y process-release.',
+      suggestedQuestions: ['¿Cómo manejás el release manifest?'],
+    });
+    questionLogModelMock.create.mockResolvedValue(undefined);
+
+    const result = await service.reply({
+      message: '¿Cómo resolviste las lambdas del blog en portfolio cloud?',
+      sessionId: 's5',
+    });
+
+    expect(result.source).toBe('ai');
+    expect(knowledgeServiceMock.getRelevantContext).toHaveBeenCalledWith(
+      '¿Cómo resolviste las lambdas del blog en portfolio cloud?',
+    );
+    expect(openAiServiceMock.generateChatResponse).toHaveBeenCalled();
+  });
 });

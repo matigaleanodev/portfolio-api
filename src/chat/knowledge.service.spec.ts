@@ -108,6 +108,20 @@ describe('KnowledgeService', () => {
       ]),
     );
   });
+
+  it('prioriza conocimiento cloud cuando la pregunta apunta a lambdas y serverless', async () => {
+    const service = new KnowledgeService();
+
+    const result = await service.getRelevantContext(
+      'como resolviste lambdas y serverless en portfolio cloud',
+    );
+
+    expect(result[0]).toEqual(
+      expect.objectContaining({
+        sourceType: 'cloud',
+      }),
+    );
+  });
 });
 
 async function writeKnowledgeArtifact(

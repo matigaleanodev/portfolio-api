@@ -34,6 +34,9 @@ export const CHAT_PORTFOLIO_ANCHOR_TERMS = [
   'galeano',
   'portfolio',
   'portafolio',
+  'blog',
+  'post',
+  'posts',
   'proyecto',
   'proyectos',
   'experiencia',
@@ -51,7 +54,78 @@ export const CHAT_PORTFOLIO_ANCHOR_TERMS = [
   'foodly',
   'modo playa',
   'contacto',
+  'cloud',
+  'lambda',
+  'lambdas',
+  'serverless',
+  'eventbridge',
+  's3',
+  'r2',
   'cv',
+] as const;
+
+export const CHAT_PROJECT_TOPIC_TERMS = [
+  'foodly',
+  'modo playa',
+  'play store',
+  'repositorio',
+  'github',
+  'proyecto',
+  'proyectos',
+  'demo',
+  'app',
+  'aplicacion',
+  'api',
+  'portfolio',
+] as const;
+
+export const CHAT_BLOG_TOPIC_TERMS = [
+  'blog',
+  'post',
+  'posts',
+  'articulo',
+  'articulos',
+  'escribiste',
+  'publicaste',
+  'publicacion',
+  'nota',
+  'nota tecnica',
+  'nest',
+  'angular',
+  'docker',
+  'ec2',
+  'arquitectura',
+] as const;
+
+export const CHAT_CLOUD_TOPIC_TERMS = [
+  'cloud',
+  'aws',
+  'lambda',
+  'lambdas',
+  's3',
+  'r2',
+  'eventbridge',
+  'serverless',
+  'release',
+  'og',
+  'open graph',
+  'suscripciones',
+  'subscribe',
+  'unsubscribe',
+  'process-release',
+] as const;
+
+export const CHAT_PROFILE_TOPIC_TERMS = [
+  'quien sos',
+  'experiencia',
+  'trabajo',
+  'ingertec',
+  'contacto',
+  'linkedin',
+  'github',
+  'fortalezas',
+  'perfil',
+  'fullstack',
 ] as const;
 
 export const CHAT_PROFESSIONAL_TOPIC_TERMS = [

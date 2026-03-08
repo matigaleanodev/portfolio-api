@@ -1,6 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {
+  CHAT_BLOG_TOPIC_TERMS,
+  CHAT_CLOUD_TOPIC_TERMS,
+  CHAT_PROFILE_TOPIC_TERMS,
+  CHAT_PROJECT_TOPIC_TERMS,
+} from './chat-content.config';
 import { CLOUD_KNOWLEDGE_ITEMS } from './knowledge/cloud.knowledge';
 import { PROFILE_KNOWLEDGE_ITEMS } from './knowledge/profile.knowledge';
 import { KnowledgeContextItem, KnowledgeLink } from './chat.types';
@@ -151,11 +157,7 @@ export class KnowledgeService {
       sourceType: 'project' as const,
       sourceId: project.slug,
       title: project.title,
-      text: [
-        project.excerpt,
-        project.highlights?.join(' '),
-        project.searchText,
-      ]
+      text: [project.excerpt, project.highlights?.join(' '), project.searchText]
         .filter(Boolean)
         .join(' '),
       tags: project.stack ?? [],
@@ -183,13 +185,33 @@ export class KnowledgeService {
     const linkText = (item.links ?? [])
       .map((link) => `${link.label} ${link.url}`)
       .join(' ');
+    const sourceAffinity = this.getSourceAffinityScore(question, item);
 
     return (
+      sourceAffinity * 4 +
       this.keywordScore(question, item.title) * 3 +
       this.keywordScore(question, item.text) * 2 +
       this.keywordScore(question, tagText) * 2 +
       this.keywordScore(question, linkText)
     );
+  }
+
+  private getSourceAffinityScore(
+    question: string,
+    item: KnowledgeContextItem,
+  ): number {
+    switch (item.sourceType) {
+      case 'project':
+        return this.containsAny(question, CHAT_PROJECT_TOPIC_TERMS) ? 2 : 0;
+      case 'post':
+        return this.containsAny(question, CHAT_BLOG_TOPIC_TERMS) ? 2 : 0;
+      case 'cloud':
+        return this.containsAny(question, CHAT_CLOUD_TOPIC_TERMS) ? 2 : 0;
+      case 'profile':
+        return this.containsAny(question, CHAT_PROFILE_TOPIC_TERMS) ? 2 : 0;
+      default:
+        return 0;
+    }
   }
 
   private normalize(value: string): string {
@@ -217,5 +239,9 @@ export class KnowledgeService {
       (score, token) => score + (normalizedText.includes(token) ? 1 : 0),
       0,
     );
+  }
+
+  private containsAny(text: string, terms: readonly string[]): boolean {
+    return terms.some((term) => text.includes(term));
   }
 }
