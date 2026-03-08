@@ -24,6 +24,7 @@ import {
   CHAT_PORTFOLIO_ANCHOR_TERMS,
   CHAT_PROFESSIONAL_TOPIC_TERMS,
 } from './chat-content.config';
+import { KnowledgeContextItem } from './chat.types';
 import { FaqService } from './faq.service';
 import { KnowledgeService } from './knowledge.service';
 import { OpenAiService } from './openai.service';
@@ -117,6 +118,14 @@ export class ChatService {
       return response;
     }
 
+    if (contextItems.length > 0) {
+      const contextualFallback = this.buildContextualFallbackResponse(
+        contextItems[0],
+      );
+      await this.logQuestion(dto, contextualFallback.source);
+      return contextualFallback;
+    }
+
     const fallbackResponse = await this.buildSystemResponse(
       'fallback',
       CHAT_DEFAULT_FALLBACK_ANSWER,
@@ -154,6 +163,66 @@ export class ChatService {
     }
 
     return merged;
+  }
+
+  private buildContextualFallbackResponse(
+    item: KnowledgeContextItem,
+  ): ChatResponseDto {
+    const summary = this.buildShortContextSummary(item);
+
+    return {
+      answer: summary
+        ? `Según el portfolio, ${summary}`
+        : CHAT_DEFAULT_FALLBACK_ANSWER,
+      suggestedQuestions: this.buildContextualSuggestions(item),
+      source: 'fallback',
+    };
+  }
+
+  private buildShortContextSummary(item: KnowledgeContextItem): string {
+    const normalized = item.text.replace(/\s+/g, ' ').trim();
+    if (!normalized) {
+      return '';
+    }
+
+    if (normalized.length <= 220) {
+      return normalized;
+    }
+
+    return `${normalized.slice(0, 217).trimEnd()}...`;
+  }
+
+  private buildContextualSuggestions(item: KnowledgeContextItem): string[] {
+    const suggestionsBySource: Record<
+      KnowledgeContextItem['sourceType'],
+      readonly string[]
+    > = {
+      faq: [
+        '¿Qué proyecto destacás de tu portfolio?',
+        '¿Qué tecnologías usás actualmente?',
+      ],
+      profile: [
+        '¿Cuál es tu experiencia laboral?',
+        '¿Cómo puedo contactarte?',
+      ],
+      project: [
+        '¿Qué tecnologías usaste en ese proyecto?',
+        '¿Qué links públicos tiene ese proyecto?',
+      ],
+      post: [
+        '¿Qué otros posts del blog tenés?',
+        '¿Qué tecnologías tratás en ese post?',
+      ],
+      cloud: [
+        '¿Cómo está dividido el ecosistema portfolio?',
+        '¿Qué resolviste con AWS Lambda y storage?',
+      ],
+    };
+
+    return this.mergeSuggestions(
+      suggestionsBySource[item.sourceType] ?? [],
+      CHAT_DEFAULT_FALLBACK_SUGGESTED_QUESTIONS,
+    );
   }
 
   private async logQuestion(

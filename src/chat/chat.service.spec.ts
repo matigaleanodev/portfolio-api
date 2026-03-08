@@ -142,6 +142,34 @@ describe('ChatService', () => {
     expect(result.suggestedQuestions).toHaveLength(2);
   });
 
+  it('usa fallback fijo basado en contexto cuando AI no responde pero hay conocimiento relevante', async () => {
+    faqServiceMock.findBestMatch.mockResolvedValue(null);
+    knowledgeServiceMock.getRelevantContext.mockResolvedValue([
+      {
+        sourceType: 'project',
+        sourceId: 'foodly-notes',
+        title: 'Foodly Notes',
+        text: 'Foodly Notes está publicada en Play Store y tiene repositorios frontend y backend públicos.',
+        tags: ['angular', 'ionic', 'nestjs'],
+      },
+    ]);
+    openAiServiceMock.generateChatResponse.mockResolvedValue(null);
+    questionLogModelMock.create.mockResolvedValue(undefined);
+
+    const result = await service.reply({
+      message: 'contame de foodly notes',
+      sessionId: 's-fallback-project',
+    });
+
+    expect(result.source).toBe('fallback');
+    expect(result.answer).toContain('Según el portfolio');
+    expect(result.answer).toContain('Play Store');
+    expect(result.suggestedQuestions).toEqual([
+      '¿Qué tecnologías usaste en ese proyecto?',
+      '¿Qué links públicos tiene ese proyecto?',
+    ]);
+  });
+
   it('intercepta preguntas fuera de alcance con redireccion al portfolio', async () => {
     questionLogModelMock.create.mockResolvedValue(undefined);
 
@@ -222,5 +250,32 @@ describe('ChatService', () => {
       '¿Cómo resolviste las lambdas del blog en portfolio cloud?',
     );
     expect(openAiServiceMock.generateChatResponse).toHaveBeenCalled();
+  });
+
+  it('usa fallback fijo contextual para preguntas cloud cuando AI no responde', async () => {
+    faqServiceMock.findBestMatch.mockResolvedValue(null);
+    knowledgeServiceMock.getRelevantContext.mockResolvedValue([
+      {
+        sourceType: 'cloud',
+        sourceId: 'cloud-lambdas',
+        title: 'Experiencia reciente con AWS Lambda',
+        text: 'Se implementaron Lambdas dedicadas para generate-og, notify-post y process-release en portfolio-cloud.',
+        tags: ['aws', 'lambda', 'serverless'],
+      },
+    ]);
+    openAiServiceMock.generateChatResponse.mockResolvedValue(null);
+    questionLogModelMock.create.mockResolvedValue(undefined);
+
+    const result = await service.reply({
+      message: 'como resolviste portfolio cloud',
+      sessionId: 's-fallback-cloud',
+    });
+
+    expect(result.source).toBe('fallback');
+    expect(result.answer).toContain('Según el portfolio');
+    expect(result.suggestedQuestions).toEqual([
+      '¿Cómo está dividido el ecosistema portfolio?',
+      '¿Qué resolviste con AWS Lambda y storage?',
+    ]);
   });
 });
