@@ -4,6 +4,7 @@ import path from 'node:path';
 import {
   getEditorialKnowledgeCandidatePaths,
   getMissingRequiredEnv,
+  getPortfolioCloudApiBaseUrl,
   getPrimaryEditorialKnowledgePath,
   parseCorsOrigins,
   parseTrustProxy,
@@ -62,8 +63,21 @@ describe('runtime.config', () => {
         getMissingRequiredEnv({
           RESEND_API_KEY: '',
           CONTACT_FROM_EMAIL: 'from@example.com',
+          PORTFOLIO_CLOUD_API_URL: '',
         }),
-      ).toEqual(['RESEND_API_KEY', 'CONTACT_TO_EMAIL']);
+      ).toEqual([
+        'RESEND_API_KEY',
+        'CONTACT_TO_EMAIL',
+        'PORTFOLIO_CLOUD_API_URL',
+      ]);
+    });
+
+    it('returns the normalized portfolio-cloud base url', () => {
+      expect(
+        getPortfolioCloudApiBaseUrl({
+          PORTFOLIO_CLOUD_API_URL: 'https://cloud.example.com/dev///',
+        }),
+      ).toBe('https://cloud.example.com/dev');
     });
 
     it('does not require the editorial artifact outside production', async () => {
@@ -74,6 +88,7 @@ describe('runtime.config', () => {
             RESEND_API_KEY: 'key',
             CONTACT_FROM_EMAIL: 'from@example.com',
             CONTACT_TO_EMAIL: 'to@example.com',
+            PORTFOLIO_CLOUD_API_URL: 'https://cloud.example.com/dev',
           },
           '/tmp/non-existent',
         ),
@@ -92,6 +107,7 @@ describe('runtime.config', () => {
             RESEND_API_KEY: 'key',
             CONTACT_FROM_EMAIL: 'from@example.com',
             CONTACT_TO_EMAIL: 'to@example.com',
+            PORTFOLIO_CLOUD_API_URL: 'https://cloud.example.com/dev',
           },
           cwdPath,
         ),
@@ -114,6 +130,7 @@ describe('runtime.config', () => {
             RESEND_API_KEY: 'key',
             CONTACT_FROM_EMAIL: 'from@example.com',
             CONTACT_TO_EMAIL: 'to@example.com',
+            PORTFOLIO_CLOUD_API_URL: 'https://cloud.example.com/dev',
           },
           cwdPath,
         ),

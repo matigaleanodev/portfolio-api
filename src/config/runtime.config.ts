@@ -59,9 +59,22 @@ export function getMissingRequiredEnv(
     'RESEND_API_KEY',
     'CONTACT_FROM_EMAIL',
     'CONTACT_TO_EMAIL',
+    'PORTFOLIO_CLOUD_API_URL',
   ] as const;
 
   return requiredKeys.filter((key) => !env[key]?.trim());
+}
+
+export function getPortfolioCloudApiBaseUrl(
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  const rawValue = env.PORTFOLIO_CLOUD_API_URL?.trim();
+
+  if (!rawValue) {
+    throw new Error('Missing required environment variable: PORTFOLIO_CLOUD_API_URL');
+  }
+
+  return rawValue.replace(/\/+$/, '');
 }
 
 export async function resolveExistingEditorialKnowledgePath(

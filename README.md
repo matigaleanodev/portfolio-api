@@ -9,12 +9,15 @@ Contrato público actual:
 
 - `GET /api/health`
 - `POST /api/contact`
+- `POST /api/subscriptions`
+- `DELETE /api/subscriptions`
 - `GET /api/chat/starters`
 - `POST /api/chat`
 
 ## ✨ Features
 
 - Endpoint público de contacto
+- Fachada pública mínima para suscripciones del blog
 - Chatbot híbrido con sugerencias de preguntas
 - Starters del chat (`GET /api/chat/starters`)
 - FAQs versionadas en código para respuestas y sugerencias del chatbot
@@ -64,6 +67,53 @@ Respuesta esperada:
 - `204 No Content` si el request es válido
 - `400 Bad Request` si falla la validación
 - `429 Too Many Requests` si supera el rate limit
+
+### Suscripciones
+
+`POST /api/subscriptions`
+
+Body:
+
+```json
+{
+  "email": "reader@example.com"
+}
+```
+
+Respuesta esperada:
+
+```json
+{
+  "message": "Subscribed successfully",
+  "email": "reader@example.com"
+}
+```
+
+`DELETE /api/subscriptions`
+
+Body:
+
+```json
+{
+  "email": "reader@example.com"
+}
+```
+
+Respuesta esperada:
+
+```json
+{
+  "message": "Unsubscribed successfully",
+  "email": "reader@example.com"
+}
+```
+
+Notas:
+
+- `portfolio-api` no persiste suscriptores ni implementa dominio editorial
+- la API delega hacia `portfolio-cloud`
+- `portfolio-cloud` sigue siendo el owner del dominio de suscriptores
+- ambos endpoints tienen validacion DTO y rate limit de `10` requests por hora por IP
 
 ## 🤖 Chatbot
 
@@ -140,6 +190,7 @@ Crear un archivo `.env` basado en `.env.example`:
 - `CONTACT_TO_EMAIL`: email destino (tu inbox)
 - `CORS_ORIGIN`: origen permitido (ej: `https://matiasgaleano.dev`)
 - `TRUST_PROXY`: cantidad de proxies confiables delante de Express (ej: `1` detrás de Traefik o Nginx)
+- `PORTFOLIO_CLOUD_API_URL`: base URL pública de `portfolio-cloud` para delegar suscripciones
 - `OPENAI_API_KEY`: API key de OpenAI (para el chatbot)
 - `OPENAI_CHAT_MODEL`: modelo de chat (default: `gpt-4.1-mini`)
 - `PORT`: puerto de la API (default: `3000`)
@@ -187,7 +238,7 @@ npm run lint
 
 El deploy productivo de `portfolio-api` debe cumplir dos condiciones antes de iniciar la app:
 
-- `RESEND_API_KEY`, `CONTACT_FROM_EMAIL` y `CONTACT_TO_EMAIL` deben existir
+- `RESEND_API_KEY`, `CONTACT_FROM_EMAIL`, `CONTACT_TO_EMAIL` y `PORTFOLIO_CLOUD_API_URL` deben existir
 - `.generated/chat/knowledge.json` debe estar presente en el directorio operativo del backend
 
 Si falta ese artifact editorial, el workflow de deploy y el arranque en `NODE_ENV=production` deben fallar para evitar un runtime degradado silenciosamente.
