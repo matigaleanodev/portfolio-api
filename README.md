@@ -142,7 +142,6 @@ Crear un archivo `.env` basado en `.env.example`:
 - `TRUST_PROXY`: cantidad de proxies confiables delante de Express (ej: `1` detrás de Traefik o Nginx)
 - `OPENAI_API_KEY`: API key de OpenAI (para el chatbot)
 - `OPENAI_CHAT_MODEL`: modelo de chat (default: `gpt-4.1-mini`)
-- `CHAT_EDITORIAL_KNOWLEDGE_PATH`: ruta opcional al artifact generado por `portfolio` en `.generated/chat/knowledge.json`
 - `PORT`: puerto de la API (default: `3000`)
 
 ## 📚 Fuente de conocimiento del chatbot
@@ -150,6 +149,8 @@ Crear un archivo `.env` basado en `.env.example`:
 Las FAQs del chatbot viven versionadas en `src/chat/content/chat-faq.data.ts`.
 El conocimiento curado del chatbot vive versionado en `src/chat/knowledge/`.
 El conocimiento editorial de proyectos y blog se genera desde el repo `portfolio`.
+En runtime, la API busca ese artifact en `.generated/chat/knowledge.json` dentro de su propio directorio de trabajo.
+En desarrollo local mantiene un fallback al repo hermano `../portfolio/.generated/chat/knowledge.json`.
 
 ## 🖥️ Run locally
 

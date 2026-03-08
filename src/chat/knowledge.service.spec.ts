@@ -4,18 +4,12 @@ import path from 'node:path';
 import { KnowledgeService } from './knowledge.service';
 
 describe('KnowledgeService', () => {
-  const originalEditorialPath = process.env.CHAT_EDITORIAL_KNOWLEDGE_PATH;
-
-  afterEach(async () => {
-    if (originalEditorialPath === undefined) {
-      delete process.env.CHAT_EDITORIAL_KNOWLEDGE_PATH;
-    } else {
-      process.env.CHAT_EDITORIAL_KNOWLEDGE_PATH = originalEditorialPath;
-    }
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('prioriza el artifact editorial cuando coincide mejor con la pregunta', async () => {
-    const artifactPath = await writeKnowledgeArtifact({
+    const cwdPath = await writeKnowledgeArtifact({
       generatedAt: new Date().toISOString(),
       projects: [
         {
@@ -36,7 +30,7 @@ describe('KnowledgeService', () => {
       posts: [],
     });
 
-    process.env.CHAT_EDITORIAL_KNOWLEDGE_PATH = artifactPath;
+    jest.spyOn(process, 'cwd').mockReturnValue(cwdPath);
 
     const service = new KnowledgeService();
     const result = await service.getRelevantContext(
@@ -57,7 +51,10 @@ describe('KnowledgeService', () => {
   });
 
   it('responde con conocimiento curado local cuando no hay artifact editorial', async () => {
-    delete process.env.CHAT_EDITORIAL_KNOWLEDGE_PATH;
+    const cwdPath = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'portfolio-chat-no-artifact-'),
+    );
+    jest.spyOn(process, 'cwd').mockReturnValue(cwdPath);
 
     const service = new KnowledgeService();
     const result = await service.getRelevantContext(
@@ -75,7 +72,7 @@ describe('KnowledgeService', () => {
   });
 
   it('incluye posts del blog dentro del conocimiento editorial', async () => {
-    const artifactPath = await writeKnowledgeArtifact({
+    const cwdPath = await writeKnowledgeArtifact({
       generatedAt: new Date().toISOString(),
       projects: [],
       posts: [
@@ -92,7 +89,7 @@ describe('KnowledgeService', () => {
       ],
     });
 
-    process.env.CHAT_EDITORIAL_KNOWLEDGE_PATH = artifactPath;
+    jest.spyOn(process, 'cwd').mockReturnValue(cwdPath);
 
     const service = new KnowledgeService();
     const result = await service.getRelevantContext(
@@ -130,7 +127,9 @@ async function writeKnowledgeArtifact(
   const directoryPath = await fs.mkdtemp(
     path.join(os.tmpdir(), 'portfolio-chat-knowledge-'),
   );
-  const filePath = path.join(directoryPath, 'knowledge.json');
+  const generatedPath = path.join(directoryPath, '.generated', 'chat');
+  await fs.mkdir(generatedPath, { recursive: true });
+  const filePath = path.join(generatedPath, 'knowledge.json');
   await fs.writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`);
-  return filePath;
+  return directoryPath;
 }

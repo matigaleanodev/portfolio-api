@@ -116,20 +116,17 @@ export class KnowledgeService {
   }
 
   private async resolveEditorialKnowledgePath(): Promise<string | null> {
-    const configured = process.env.CHAT_EDITORIAL_KNOWLEDGE_PATH?.trim();
-    const candidatePaths = configured
-      ? [path.resolve(configured)]
-      : [
-          path.resolve(process.cwd(), '.generated', 'chat', 'knowledge.json'),
-          path.resolve(
-            process.cwd(),
-            '..',
-            'portfolio',
-            '.generated',
-            'chat',
-            'knowledge.json',
-          ),
-        ];
+    const candidatePaths = [
+      path.resolve(process.cwd(), '.generated', 'chat', 'knowledge.json'),
+      path.resolve(
+        process.cwd(),
+        '..',
+        'portfolio',
+        '.generated',
+        'chat',
+        'knowledge.json',
+      ),
+    ];
 
     for (const candidatePath of candidatePaths) {
       try {
