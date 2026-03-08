@@ -1,3 +1,4 @@
+import { InternalServerErrorException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { ContactService } from './contact.service';
@@ -81,5 +82,17 @@ describe('ContactService', () => {
     expect(args.text).toContain(`Email: ${dto.email}`);
     expect(args.text).toContain('Fecha:');
     expect(args.text).toContain(dto.message);
+  });
+
+  it('lanza error controlado cuando falla Resend', async () => {
+    emailsSendMock.mockRejectedValueOnce(new Error('Resend unavailable'));
+
+    await expect(
+      service.send({
+        name: 'Juan Perez',
+        email: 'juan@test.com',
+        message: 'Hola Mati, vi tu portfolio y quería contactarte.',
+      }),
+    ).rejects.toBeInstanceOf(InternalServerErrorException);
   });
 });

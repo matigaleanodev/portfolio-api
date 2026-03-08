@@ -45,8 +45,6 @@ describe('ChatController (e2e)', () => {
       suggestedQuestions: [
         '¿Quién sos y a qué te dedicás?',
         '¿Qué tecnologías usás?',
-        '¿Qué proyecto destacás?',
-        '¿Cuál es tu experiencia laboral?',
       ],
     });
 
@@ -61,8 +59,6 @@ describe('ChatController (e2e)', () => {
         suggestedQuestions: [
           '¿Quién sos y a qué te dedicás?',
           '¿Qué tecnologías usás?',
-          '¿Qué proyecto destacás?',
-          '¿Cuál es tu experiencia laboral?',
         ],
       });
   });
@@ -94,6 +90,31 @@ describe('ChatController (e2e)', () => {
           '¿Qué tecnologías usaste en Foodly Notes?',
           '¿Qué proyecto destacás?',
         ],
+        source: 'ai',
+      });
+  });
+
+  it('POST /api/chat limita suggestedQuestions a 2', () => {
+    chatServiceMock.reply.mockResolvedValue({
+      answer: 'Respuesta',
+      suggestedQuestions: ['Primera', 'Segunda'],
+      source: 'ai',
+    });
+
+    const httpServer = app.getHttpServer() as unknown as Parameters<
+      typeof request
+    >[0];
+
+    return request(httpServer)
+      .post('/api/chat')
+      .send({
+        message: 'pregunta',
+        sessionId: 'local-dev-session',
+      })
+      .expect(201)
+      .expect({
+        answer: 'Respuesta',
+        suggestedQuestions: ['Primera', 'Segunda'],
         source: 'ai',
       });
   });

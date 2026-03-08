@@ -42,6 +42,12 @@ export class OpenAiService {
         (item, index) =>
           `[${index + 1}] ${item.sourceType} | ${item.title}\n${item.text}${
             item.tags?.length ? `\nTags: ${item.tags.join(', ')}` : ''
+          }${
+            item.links?.length
+              ? `\nLinks: ${item.links
+                  .map((link) => `${link.label}: ${link.url}`)
+                  .join(' | ')}`
+              : ''
           }`,
       )
       .join('\n\n');
