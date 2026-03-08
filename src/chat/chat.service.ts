@@ -1,10 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import {
-  ChatQuestionLog,
-  ChatQuestionLogDocument,
-} from './chat-question-log.schema';
 import {
   ChatRequestDto,
   ChatResponseDto,
@@ -14,8 +8,8 @@ import {
   CHAT_DEFAULT_AI_FALLBACK_SUGGESTIONS,
   CHAT_DEFAULT_AI_SEED_QUESTIONS,
   CHAT_DEFAULT_FALLBACK_ANSWER,
-  CHAT_DEFAULT_FALLBACK_STARTERS,
   CHAT_DEFAULT_FALLBACK_SUGGESTED_QUESTIONS,
+  CHAT_DEFAULT_STARTERS,
   CHAT_DEFAULT_OUT_OF_SCOPE_ANSWER,
   CHAT_DEFAULT_OUT_OF_SCOPE_SUGGESTED_QUESTIONS,
   CHAT_GENERAL_KNOWLEDGE_TERMS,
@@ -24,6 +18,7 @@ import {
   CHAT_PORTFOLIO_ANCHOR_TERMS,
   CHAT_PROFESSIONAL_TOPIC_TERMS,
 } from './chat-content.config';
+import { KnowledgeContextItem } from './chat.types';
 import { FaqService } from './faq.service';
 import { KnowledgeService } from './knowledge.service';
 import { OpenAiService } from './openai.service';
@@ -34,29 +29,12 @@ export class ChatService {
     private readonly faqService: FaqService,
     private readonly knowledgeService: KnowledgeService,
     private readonly openAiService: OpenAiService,
-    @InjectModel(ChatQuestionLog.name)
-    private readonly questionLogModel: Model<ChatQuestionLogDocument>,
   ) {}
 
-  async getStarters(): Promise<ChatStartersResponseDto> {
-    const starters = await this.faqService.getStarterQuestions(4);
-
-    const fallbackStarters = await this.getSystemSuggestedQuestions(
-      'starter_fallback',
-      CHAT_DEFAULT_FALLBACK_STARTERS,
-    );
-
-    const combined = [...starters];
-    for (const question of fallbackStarters) {
-      if (combined.length >= 4) {
-        break;
-      }
-      if (!combined.includes(question)) {
-        combined.push(question);
-      }
-    }
-
-    return { suggestedQuestions: combined.slice(0, 4) };
+  getStarters(): Promise<ChatStartersResponseDto> {
+    return Promise.resolve({
+      suggestedQuestions: [...CHAT_DEFAULT_STARTERS],
+    });
   }
 
   async reply(dto: ChatRequestDto): Promise<ChatResponseDto> {
@@ -66,14 +44,13 @@ export class ChatService {
         CHAT_DEFAULT_OUT_OF_SCOPE_ANSWER,
         CHAT_DEFAULT_OUT_OF_SCOPE_SUGGESTED_QUESTIONS,
       );
-      await this.logQuestion(dto, outOfScopeResponse.source);
       return outOfScopeResponse;
     }
 
     const faqMatch = await this.faqService.findBestMatch(dto.message);
 
-    if (faqMatch?._id) {
-      const faqId = faqMatch._id.toHexString();
+    if (faqMatch?.id) {
+      const faqId = faqMatch.id;
       await this.faqService.incrementUsage(faqId);
 
       const faqSuggestions = this.faqService.buildFollowUpSuggestions(faqMatch);
@@ -100,7 +77,6 @@ export class ChatService {
         source: 'faq',
       };
 
-      await this.logQuestion(dto, response.source, faqId);
       return response;
     }
 
@@ -130,8 +106,14 @@ export class ChatService {
         source: 'ai',
       };
 
-      await this.logQuestion(dto, response.source);
       return response;
+    }
+
+    if (contextItems.length > 0) {
+      const contextualFallback = this.buildContextualFallbackResponse(
+        contextItems[0],
+      );
+      return contextualFallback;
     }
 
     const fallbackResponse = await this.buildSystemResponse(
@@ -140,7 +122,6 @@ export class ChatService {
       CHAT_DEFAULT_FALLBACK_SUGGESTED_QUESTIONS,
     );
 
-    await this.logQuestion(dto, fallbackResponse.source);
     return fallbackResponse;
   }
 
@@ -165,7 +146,7 @@ export class ChatService {
       seen.add(key);
       merged.push(clean);
 
-      if (merged.length >= 4) {
+      if (merged.length >= 2) {
         break;
       }
     }
@@ -173,17 +154,61 @@ export class ChatService {
     return merged;
   }
 
-  private async logQuestion(
-    dto: ChatRequestDto,
-    source: ChatResponseDto['source'],
-    matchedFaqId?: string,
-  ): Promise<void> {
-    await this.questionLogModel.create({
-      question: dto.message,
-      sessionId: dto.sessionId,
-      source,
-      matchedFaqId,
-    });
+  private buildContextualFallbackResponse(
+    item: KnowledgeContextItem,
+  ): ChatResponseDto {
+    const summary = this.buildShortContextSummary(item);
+
+    return {
+      answer: summary
+        ? `Según el portfolio, ${summary}`
+        : CHAT_DEFAULT_FALLBACK_ANSWER,
+      suggestedQuestions: this.buildContextualSuggestions(item),
+      source: 'fallback',
+    };
+  }
+
+  private buildShortContextSummary(item: KnowledgeContextItem): string {
+    const normalized = item.text.replace(/\s+/g, ' ').trim();
+    if (!normalized) {
+      return '';
+    }
+
+    if (normalized.length <= 220) {
+      return normalized;
+    }
+
+    return `${normalized.slice(0, 217).trimEnd()}...`;
+  }
+
+  private buildContextualSuggestions(item: KnowledgeContextItem): string[] {
+    const suggestionsBySource: Record<
+      KnowledgeContextItem['sourceType'],
+      readonly string[]
+    > = {
+      faq: [
+        '¿Qué proyecto destacás de tu portfolio?',
+        '¿Qué tecnologías usás actualmente?',
+      ],
+      profile: ['¿Cuál es tu experiencia laboral?', '¿Cómo puedo contactarte?'],
+      project: [
+        '¿Qué tecnologías usaste en ese proyecto?',
+        '¿Qué links públicos tiene ese proyecto?',
+      ],
+      post: [
+        '¿Qué otros posts del blog tenés?',
+        '¿Qué tecnologías tratás en ese post?',
+      ],
+      cloud: [
+        '¿Cómo está dividido el ecosistema portfolio?',
+        '¿Qué resolviste con AWS Lambda y storage?',
+      ],
+    };
+
+    return this.mergeSuggestions(
+      suggestionsBySource[item.sourceType] ?? [],
+      CHAT_DEFAULT_FALLBACK_SUGGESTED_QUESTIONS,
+    );
   }
 
   private isOutOfScopeQuestion(message: string): boolean {
@@ -255,8 +280,8 @@ export class ChatService {
       answer: entry?.answer?.trim() || defaultAnswer,
       suggestedQuestions:
         entry?.suggestedQuestions?.length && entry.suggestedQuestions.length > 0
-          ? entry.suggestedQuestions.slice(0, 4)
-          : [...defaultSuggestedQuestions],
+          ? entry.suggestedQuestions.slice(0, 2)
+          : [...defaultSuggestedQuestions].slice(0, 2),
       source: 'fallback',
     };
   }
@@ -267,9 +292,9 @@ export class ChatService {
   ): Promise<string[]> {
     const entry = await this.faqService.getSystemEntry(key);
     if (!entry || entry.suggestedQuestions.length === 0) {
-      return [...defaults];
+      return [...defaults].slice(0, 2);
     }
 
-    return entry.suggestedQuestions.slice(0, 4);
+    return entry.suggestedQuestions.slice(0, 2);
   }
 }

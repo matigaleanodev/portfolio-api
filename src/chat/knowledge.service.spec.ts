@@ -1,100 +1,119 @@
-import { Test } from '@nestjs/testing';
-import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
-import { Project } from '../projects/projects.schema';
 import { KnowledgeService } from './knowledge.service';
+import { ChatKnowledgeRepository } from './chat-knowledge.repository';
 
 describe('KnowledgeService', () => {
-  let service: KnowledgeService;
-
-  const execMock = jest.fn();
-  const leanMock = jest.fn(() => ({ exec: execMock }));
-  const limitMock = jest.fn(() => ({ lean: leanMock }));
-  const sortMock = jest.fn(() => ({ limit: limitMock }));
-  const findProjectsMock = jest.fn(() => ({ sort: sortMock }));
-
-  const projectModelMock = {
-    find: findProjectsMock,
-  };
-
-  const toArrayMock = jest.fn();
-  const profileLimitMock = jest.fn(() => ({ toArray: toArrayMock }));
-  const profileFindMock = jest.fn(() => ({ limit: profileLimitMock }));
-  const collectionMock = jest.fn(() => ({ find: profileFindMock }));
-
-  const connectionMock = {
-    collection: collectionMock,
-  };
-
-  beforeEach(async () => {
-    jest.clearAllMocks();
-
-    const moduleRef = await Test.createTestingModule({
-      providers: [
-        KnowledgeService,
-        { provide: getModelToken(Project.name), useValue: projectModelMock },
-        { provide: getConnectionToken(), useValue: connectionMock },
-      ],
-    }).compile();
-
-    service = moduleRef.get(KnowledgeService);
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  it('prioriza contexto de profile_context cuando coincide mejor con la pregunta', async () => {
-    execMock.mockResolvedValue([
-      {
-        _id: '1',
-        name: 'Portfolio',
-        description: 'API con contacto y proyectos',
-        technologies: ['NestJS', 'MongoDB'],
-      },
-    ]);
-    toArrayMock.mockResolvedValue([
-      {
-        sourceType: 'profile',
-        sourceId: 'main-projects',
-        title: 'Proyectos del portfolio',
-        text: 'Foodly Notes está publicado en Google Play Store.',
-        tags: ['foodly-notes', 'play', 'store'],
-      },
-    ]);
-
+  it('prioriza el artifact editorial cuando coincide mejor con la pregunta', async () => {
+    const service = createService({
+      generatedAt: new Date().toISOString(),
+      projects: [
+        {
+          slug: 'foodly-notes',
+          title: 'Foodly Notes',
+          excerpt: 'App de recetas publicada en Google Play Store.',
+          stack: ['Angular', 'Ionic', 'NestJS'],
+          links: [
+            {
+              label: 'Play Store',
+              url: 'https://play.google.com/store/apps/details?id=io.example',
+            },
+          ],
+          highlights: ['Publicada en Google Play Store.'],
+          searchText: 'foodly notes play store angular ionic nestjs',
+        },
+      ],
+      posts: [],
+    });
     const result = await service.getRelevantContext(
       'publicaste alguna app en play store',
     );
 
     expect(result[0]).toEqual(
       expect.objectContaining({
-        sourceType: 'profile',
-        sourceId: 'main-projects',
+        sourceType: 'project',
+        sourceId: 'foodly-notes',
       }),
     );
   });
 
-  it('devuelve fallback de contexto cuando no hay matches', async () => {
-    execMock.mockResolvedValue([
-      {
-        _id: '1',
-        name: 'Portfolio',
-        description: 'Sitio personal',
-        technologies: ['Angular'],
-      },
-      {
-        _id: '2',
-        name: 'Foodly Notes',
-        description: 'Recetario',
-        technologies: ['Ionic'],
-      },
-      {
-        _id: '3',
-        name: 'Modo Playa',
-        description: 'Catalogo',
-        technologies: ['NestJS'],
-      },
-    ]);
-    toArrayMock.mockResolvedValue([]);
+  it('responde con conocimiento curado local cuando el artifact editorial esta vacio', async () => {
+    const service = createService({
+      generatedAt: new Date().toISOString(),
+      projects: [],
+      posts: [],
+    });
+    const result = await service.getRelevantContext(
+      'como esta armado el ecosistema de portfolio cloud',
+    );
 
-    const result = await service.getRelevantContext('zzzz qqqq');
+    expect(result).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceType: 'cloud',
+          sourceId: 'cloud-ecosystem',
+        }),
+      ]),
+    );
+  });
 
-    expect(result).toHaveLength(2);
+  it('incluye posts del blog dentro del conocimiento editorial', async () => {
+    const service = createService({
+      generatedAt: new Date().toISOString(),
+      projects: [],
+      posts: [
+        {
+          slug: 'desplegar-apis-docker-ec2',
+          title: 'Cómo desplegar APIs con Docker en un EC2',
+          excerpt: 'Post sobre deploy de APIs NestJS con Docker y EC2.',
+          date: '2026-03-02',
+          tags: ['docker', 'aws', 'ec2'],
+          canonicalUrl:
+            'https://matiasgaleano.dev/blog/desplegar-apis-docker-ec2',
+          summary:
+            'Explica el criterio operativo para deploy con Docker Compose.',
+          searchText: 'docker aws ec2 deploy compose portfolio api',
+        },
+      ],
+    });
+    const result = await service.getRelevantContext(
+      'escribiste algo sobre docker en ec2',
+    );
+
+    expect(result).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceType: 'post',
+          sourceId: 'desplegar-apis-docker-ec2',
+        }),
+      ]),
+    );
+  });
+
+  it('prioriza conocimiento cloud cuando la pregunta apunta a lambdas y serverless', async () => {
+    const service = createService({
+      generatedAt: new Date().toISOString(),
+      projects: [],
+      posts: [],
+    });
+    const result = await service.getRelevantContext(
+      'como resolviste lambdas y serverless en portfolio cloud',
+    );
+
+    expect(result[0]).toEqual(
+      expect.objectContaining({
+        sourceType: 'cloud',
+      }),
+    );
   });
 });
+
+function createService(payload: Record<string, unknown>): KnowledgeService {
+  const repository = {
+    getKnowledge: jest.fn().mockResolvedValue(payload),
+  } as unknown as ChatKnowledgeRepository;
+
+  return new KnowledgeService(repository);
+}

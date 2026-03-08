@@ -1,4 +1,11 @@
-type ChatFaqSeed = {
+export type ChatSystemEntryKey =
+  | 'out_of_scope'
+  | 'fallback'
+  | 'starter_fallback'
+  | 'ai_seed'
+  | 'ai_fallback';
+
+type ChatFaqSeedEntry = {
   question: string;
   answer: string;
   aliases: string[];
@@ -11,7 +18,11 @@ type ChatFaqSeed = {
   starterPriority: number;
 };
 
-export const chatFaqSeed: ChatFaqSeed[] = [
+export type ChatFaqEntry = ChatFaqSeedEntry & {
+  id: string;
+};
+
+const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   {
     question: '¿Quién sos y a qué te dedicás?',
     answer:
@@ -311,3 +322,19 @@ export const chatFaqSeed: ChatFaqSeed[] = [
     starterPriority: 0,
   },
 ];
+
+function normalizeFaqId(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export const CHAT_FAQ_ITEMS: readonly ChatFaqEntry[] = CHAT_FAQ_SEED.map(
+  (entry) => ({
+    ...entry,
+    id: normalizeFaqId(entry.question),
+  }),
+);

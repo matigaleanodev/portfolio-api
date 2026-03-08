@@ -1,14 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { ChatFaq, ChatFaqDocument } from './chat-faq.schema';
-
-export type ChatSystemEntryKey =
-  | 'out_of_scope'
-  | 'fallback'
-  | 'starter_fallback'
-  | 'ai_seed'
-  | 'ai_fallback';
+import {
+  CHAT_FAQ_ITEMS,
+  ChatFaqEntry,
+  ChatSystemEntryKey,
+} from './content/chat-faq.data';
 
 export interface ChatSystemEntry {
   answer: string;
@@ -17,65 +12,7 @@ export interface ChatSystemEntry {
 
 @Injectable()
 export class FaqService {
-  constructor(
-    @InjectModel(ChatFaq.name)
-    private readonly faqModel: Model<ChatFaqDocument>,
-  ) {}
-
-  async getStarterQuestions(limit = 4): Promise<string[]> {
-    const fixed = await this.faqModel
-      .find({ active: true, isFixedStarter: true })
-      .sort({ starterPriority: 1, usageCount: -1 })
-      .lean()
-      .exec();
-
-    const seen = new Set<string>();
-    const starters: string[] = [];
-
-    for (const faq of fixed) {
-      const key = this.normalize(faq.question);
-      if (!seen.has(key)) {
-        seen.add(key);
-        starters.push(faq.question);
-      }
-      if (starters.length >= limit) {
-        return starters.slice(0, limit);
-      }
-    }
-
-    const dynamicCandidates = await this.faqModel
-      .find({
-        active: true,
-        isStarterCandidate: true,
-        isFixedStarter: { $ne: true },
-      })
-      .sort({ usageCount: -1, starterPriority: 1 })
-      .limit(20)
-      .lean()
-      .exec();
-
-    const shuffled = this.shuffle([...dynamicCandidates]);
-
-    for (const faq of shuffled) {
-      const key = this.normalize(faq.question);
-      if (seen.has(key)) {
-        continue;
-      }
-
-      seen.add(key);
-      starters.push(faq.question);
-
-      if (starters.length >= limit) {
-        break;
-      }
-    }
-
-    return starters.slice(0, limit);
-  }
-
-  async findBestMatch(
-    question: string,
-  ): Promise<(ChatFaq & { _id: Types.ObjectId }) | null> {
+  findBestMatch(question: string): Promise<ChatFaqEntry | null> {
     const normalizedQuestion = this.normalize(question);
     const keywordTokens = [...new Set(normalizedQuestion.split(' '))]
       .filter((token) => token.length >= 3)
@@ -83,37 +20,24 @@ export class FaqService {
 
     let activeFaqs =
       keywordTokens.length > 0
-        ? await this.faqModel
-            .find({
-              active: true,
-              $or: [
-                {
-                  question: {
-                    $regex: keywordTokens
-                      .map((token) => this.escapeRegex(token))
-                      .join('|'),
-                    $options: 'i',
-                  },
-                },
-                {
-                  aliases: {
-                    $regex: keywordTokens
-                      .map((token) => this.escapeRegex(token))
-                      .join('|'),
-                    $options: 'i',
-                  },
-                },
-              ],
-            })
-            .lean()
-            .exec()
+        ? CHAT_FAQ_ITEMS.filter((faq) => {
+            if (!faq.active) {
+              return false;
+            }
+
+            const haystack = [faq.question, ...(faq.aliases ?? [])]
+              .map((candidate) => this.normalize(candidate))
+              .join(' ');
+
+            return keywordTokens.some((token) => haystack.includes(token));
+          })
         : [];
 
     if (activeFaqs.length === 0) {
-      activeFaqs = await this.faqModel.find({ active: true }).lean().exec();
+      activeFaqs = CHAT_FAQ_ITEMS.filter((faq) => faq.active);
     }
 
-    let bestMatch: (ChatFaq & { _id: Types.ObjectId }) | null = null;
+    let bestMatch: ChatFaqEntry | null = null;
     let bestScore = 0;
 
     for (const faq of activeFaqs) {
@@ -127,35 +51,30 @@ export class FaqService {
       }
     }
 
-    return bestScore >= 0.75 ? bestMatch : null;
+    return Promise.resolve(bestScore >= 0.75 ? bestMatch : null);
   }
 
-  async incrementUsage(faqId: string): Promise<void> {
-    await this.faqModel
-      .updateOne({ _id: faqId }, { $inc: { usageCount: 1 } })
-      .exec();
+  incrementUsage(faqId: string): Promise<void> {
+    void faqId;
+    return Promise.resolve();
   }
 
-  async getSystemEntry(key: ChatSystemEntryKey): Promise<ChatSystemEntry | null> {
-    const entry = await this.faqModel
-      .findOne({
-        active: true,
-        tags: { $in: [`system:${key}`] },
-      })
-      .lean()
-      .exec();
+  getSystemEntry(key: ChatSystemEntryKey): Promise<ChatSystemEntry | null> {
+    const entry = CHAT_FAQ_ITEMS.find(
+      (faq) => faq.active && (faq.tags ?? []).includes(`system:${key}`),
+    );
 
     if (!entry) {
-      return null;
+      return Promise.resolve(null);
     }
 
-    return {
+    return Promise.resolve({
       answer: entry.answer ?? '',
       suggestedQuestions: (entry.suggestedQuestions ?? []).filter(Boolean),
-    };
+    });
   }
 
-  buildFollowUpSuggestions(faq: ChatFaq, limit = 4): string[] {
+  buildFollowUpSuggestions(faq: ChatFaqEntry, limit = 2): string[] {
     const own = (faq.suggestedQuestions ?? []).filter(Boolean);
     if (own.length > 0) {
       return own.slice(0, limit);
@@ -205,19 +124,6 @@ export class FaqService {
       .replace(/[^\p{L}\p{N}\s]/gu, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-  }
-
-  private shuffle<T>(items: T[]): T[] {
-    for (let i = items.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [items[i], items[j]] = [items[j], items[i]];
-    }
-
-    return items;
-  }
-
-  private escapeRegex(value: string): string {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   private score(input: string, candidate: string): number {
