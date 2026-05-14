@@ -26,7 +26,7 @@ const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   {
     question: '¿Quién sos y a qué te dedicás?',
     answer:
-      'Soy Matías Galeano, Fullstack Developer. Trabajo en aplicaciones en producción, con foco en mantenimiento evolutivo, optimización y experiencia de usuario. En este portfolio muestro proyectos reales, stack y experiencia técnica.',
+      'Soy Matías Galeano, Fullstack Product Developer. Trabajo en aplicaciones web y móviles en producción y me muevo bastante parejo entre frontend, backend, cloud y arquitectura. En este portfolio muestro proyectos reales, stack y experiencia técnica.',
     aliases: [
       'quien sos',
       'a que te dedicas',
@@ -49,7 +49,7 @@ const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   {
     question: '¿Qué tecnologías usás?',
     answer:
-      'Trabajo principalmente con TypeScript, Angular, Ionic, Node.js y NestJS. En proyectos personales uso MongoDB y en mi trabajo en Ingertec también trabajo con MySQL. Además uso TailwindCSS, Capacitor e integración de APIs para construir productos escalables, y me interesa sumar PostgreSQL en el corto plazo.',
+      'Trabajo principalmente con TypeScript, Angular, Ionic, Node.js y NestJS. Hoy en el laburo estoy con Angular en frontend, un backend híbrido entre monolito NestJS y microservicios en AWS Lambda, PostgreSQL como base de datos y herramientas como Docker, GitHub Actions, EC2, ECS, ECR, S3, CloudFront, CloudWatch y Cloudflare R2.',
     aliases: ['que tecnologias usas', 'stack', 'stack tecnico', 'herramientas'],
     tags: ['skills'],
     isStarterCandidate: true,
@@ -67,7 +67,7 @@ const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   {
     question: '¿Qué bases de datos usás?',
     answer:
-      'Trabajo con MongoDB en proyectos personales y con MySQL en mi trabajo en Ingertec. Además, tengo interés en trabajar con PostgreSQL en un futuro próximo.',
+      'Actualmente trabajo con PostgreSQL en mi rol en Boreal IT para Banco Comafi. Además usé MySQL en mi etapa en Ingertec y MongoDB en proyectos personales.',
     aliases: [
       'que base de datos usas',
       'que bases de datos usas',
@@ -92,7 +92,7 @@ const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   {
     question: '¿Qué proyecto destacás?',
     answer:
-      'Destaco Foodly Notes, un recetario con Ionic + Angular y API NestJS publicado en Play Store; Modo Playa, un catálogo de alojamientos con arquitectura multi-tenant y autenticación; y este portfolio desarrollado con Angular y NestJS. Los tres backends están desplegados en EC2 de AWS.',
+      'Destaco Foodly Notes, un recetario con Ionic + Angular y API NestJS publicado en Play Store; Modo Playa, un catálogo de alojamientos con backend multi-tenant en NestJS; y este portfolio con arquitectura static-first, chatbot contextual y automatización serverless en AWS. Son los proyectos que mejor muestran cómo mezclo frontend, backend y cloud dentro del mismo ecosistema.',
     aliases: ['proyecto destacado', 'mejor proyecto', 'proyectos'],
     tags: ['projects'],
     isStarterCandidate: true,
@@ -110,7 +110,7 @@ const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   {
     question: '¿Cuál es tu experiencia laboral?',
     answer:
-      'Tengo más de 3 años y medio de experiencia en Ingertec Argentina como Fullstack Developer, trabajando sobre plataformas reales y utilizando MySQL en ese contexto. También desarrollo proyectos personales fullstack, donde uso MongoDB.',
+      'Tengo cerca de cuatro años de experiencia trabajando con software en producción. Estuve en Ingertec Argentina hasta abril de 2026 como Fullstack Developer y desde entonces trabajo en Boreal IT para Banco Comafi, en un producto de Fondos Comunes de Inversión con Angular en frontend, backend híbrido entre monolito NestJS y microservicios AWS Lambda, y PostgreSQL.',
     aliases: ['experiencia laboral', 'trayectoria', 'experiencia'],
     tags: ['experience'],
     isStarterCandidate: true,
@@ -128,7 +128,7 @@ const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   {
     question: '¿Qué responsabilidades tuviste?',
     answer:
-      'En experiencia laboral me encargué del desarrollo y evolución de plataformas en producción, mantenimiento evolutivo, optimización de rendimiento y mejoras continuas en frontend y backend. En proyectos personales definí arquitectura, desarrollo fullstack, integración de APIs, autenticación, despliegue en AWS y mantenimiento de las aplicaciones publicadas.',
+      'En lo laboral me tocó desarrollar y hacer evolucionar plataformas en producción, integrar APIs REST, mantener funcionalidades vivas y meter mejoras continuas en frontend y backend. Hoy eso incluye Angular, backend NestJS, microservicios en AWS Lambda y PostgreSQL; en proyectos personales también me encargo de arquitectura, despliegues containerizados, automatización cloud, CI/CD y operación.',
     aliases: [
       'que responsabilidades tuviste',
       'cuales fueron tus responsabilidades',
@@ -153,7 +153,7 @@ const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   {
     question: '¿Cuál fue el mayor desafío técnico?',
     answer:
-      'En experiencia laboral, uno de los mayores desafíos fue optimizar rendimiento en monitores en tiempo real, históricos y control de objetivos/desvíos dentro de Smartsen sin afectar operación productiva. En proyectos personales, el desafío principal fue diseñar APIs y aplicaciones desacopladas con arquitectura mantenible, autenticación y despliegue en AWS para soportar evolución real (por ejemplo en Modo Playa y Foodly Notes).',
+      'En lo laboral, uno de los mayores desafíos fue trabajar sobre productos reales sin romper operación: primero optimizando rendimiento en Smartsen y hoy moviéndome sobre un esquema híbrido entre monolito NestJS, microservicios AWS Lambda y PostgreSQL en un producto financiero. En proyectos personales, el desafío principal fue diseñar arquitecturas desacopladas con APIs, despliegues en AWS, automatización serverless y flujos mantenibles entre frontend, backend y cloud.',
     aliases: [
       'cual fue el mayor desafio tecnico',
       'que desafio tecnico resolviste',
@@ -178,7 +178,7 @@ const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   {
     question: '¿Qué tipo de propuestas te interesan?',
     answer:
-      'Estoy abierto a propuestas remotas, a tiempo completo y por tiempo indeterminado. No me interesan proyectos cortos ni trabajos freelance.',
+      'Me interesan principalmente roles fullstack orientados a producto, donde frontend, backend y cloud tengan peso real. Busco propuestas remotas, full-time y de largo plazo; no me interesan proyectos cortos ni laburo freelance.',
     aliases: [
       'tipo de propuestas',
       'que propuestas te interesan',
