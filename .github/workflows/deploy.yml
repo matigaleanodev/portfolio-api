@@ -4,18 +4,25 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
+  id-token: write
   packages: write
+
+concurrency:
+  group: deploy-portfolio-api
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: matigaleanodev/portfolio-api
-  APP_DIR: /home/ec2-user/infra/apps/portfolio
+  APP_NAME: portfolio-api
 
 jobs:
   build-push-deploy:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     steps:
@@ -41,23 +48,57 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
-      - name: Deploy on EC2 (docker compose)
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Configure AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@v6.2.3
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            set -e
-            cd ${{ env.APP_DIR }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-${{ github.run_id }}
 
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u matigaleanodev --password-stdin
+      - name: Deploy on EC2 through Systems Manager
+        timeout-minutes: 10
+        run: |
+          set -Eeuo pipefail
 
-            sed -i "s|^IMAGE=.*$|IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}|g" .env
+          parameters=$(printf '{"commands":["sudo -u ec2-user /home/ec2-user/infra/scripts/deploy-app.sh %s sha-%s"]}' "$APP_NAME" "$GITHUB_SHA")
+          command_id=$(aws ssm send-command \
+            --region "${{ vars.AWS_REGION }}" \
+            --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
+            --document-name AWS-RunShellScript \
+            --comment "GitHub Actions deploy: $GITHUB_REPOSITORY@$GITHUB_SHA" \
+            --parameters "$parameters" \
+            --query 'Command.CommandId' \
+            --output text)
 
-            docker compose pull
-            docker compose up -d
-            docker image prune -f
+          status=Pending
+          for _ in $(seq 1 60); do
+            status=$(aws ssm get-command-invocation \
+              --region "${{ vars.AWS_REGION }}" \
+              --command-id "$command_id" \
+              --instance-id "${{ vars.EC2_INSTANCE_ID }}" \
+              --query 'Status' \
+              --output text 2>/dev/null || true)
+
+            case "$status" in
+              Success|Cancelled|Failed|TimedOut)
+                break
+                ;;
+            esac
+
+            sleep 5
+          done
+
+          aws ssm get-command-invocation \
+            --region "${{ vars.AWS_REGION }}" \
+            --command-id "$command_id" \
+            --instance-id "${{ vars.EC2_INSTANCE_ID }}" \
+            --query '{Status:Status,ResponseCode:ResponseCode,Output:StandardOutputContent,Error:StandardErrorContent}' \
+            --output json
+
+          if [[ "$status" != "Success" ]]; then
+            echo "Deployment failed with SSM status: $status" >&2
+            exit 1
+          fi
 
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
