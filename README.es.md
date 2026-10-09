@@ -78,4 +78,4 @@ La configuración de entorno está documentada en `.env.example`.
 
 ## Version
 
-Versión actual de la aplicación: **1.1.0**
+Versión actual de la aplicación: **1.2.0**
