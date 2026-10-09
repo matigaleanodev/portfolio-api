@@ -25,6 +25,7 @@ describe('ChatService', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     faqServiceMock.getSystemEntry.mockResolvedValue(null);
+    knowledgeServiceMock.getRelevantContext.mockResolvedValue([]);
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -131,8 +132,8 @@ describe('ChatService', () => {
     });
 
     expect(result.source).toBe('fallback');
-    expect(result.answer).toContain('Según el portfolio');
-    expect(result.answer).toContain('Play Store');
+    expect(result.answer).toContain('No pude generar una respuesta');
+    expect(result.answer).not.toContain('No tengo esa información');
     expect(result.suggestedQuestions).toEqual([
       '¿Qué tecnologías usaste en ese proyecto?',
       '¿Qué links públicos tiene ese proyecto?',
@@ -227,7 +228,7 @@ describe('ChatService', () => {
     });
 
     expect(result.source).toBe('fallback');
-    expect(result.answer).toContain('Según el portfolio');
+    expect(result.answer).toContain('No pude generar una respuesta');
     expect(result.suggestedQuestions).toEqual([
       '¿Cómo está dividido el ecosistema portfolio?',
       '¿Qué resolviste con AWS Lambda y storage?',

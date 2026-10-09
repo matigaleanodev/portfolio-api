@@ -46,6 +46,7 @@ export interface ChatCompletionPayload {
   userMessage: string;
   contextItems: KnowledgeContextItem[];
   suggestedSeedQuestions?: string[];
+  history?: ReadonlyArray<{ role: 'user' | 'assistant'; content: string }>;
 }
 
 export interface ChatCompletionResult {

@@ -1,7 +1,28 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class ChatHistoryMessageDto {
+  @IsIn(['user', 'assistant'])
+  role!: 'user' | 'assistant';
+
+  @IsString()
+  @Matches(/\S/)
+  @MaxLength(1500)
+  content!: string;
+}
 
 export class ChatRequestDto {
   @IsString()
+  @Matches(/\S/)
   @MaxLength(500)
   message!: string;
 
@@ -9,6 +30,13 @@ export class ChatRequestDto {
   @IsString()
   @MaxLength(100)
   sessionId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(6)
+  @ValidateNested({ each: true })
+  @Type(() => ChatHistoryMessageDto)
+  history?: ChatHistoryMessageDto[];
 }
 
 export class ChatResponseDto {

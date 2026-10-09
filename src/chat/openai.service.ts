@@ -83,6 +83,7 @@ export class OpenAiService {
           text: { format: { type: 'json_object' } },
           input: [
             { role: 'system', content: systemPrompt },
+            ...(payload.history ?? []),
             { role: 'user', content: userPrompt },
           ],
         }),
@@ -120,6 +121,10 @@ export class OpenAiService {
         suggestedQuestions,
       };
 
+      if (!result.answer) {
+        return null;
+      }
+
       this.setCachedResponse(cacheKey, result);
       return result;
     } catch (error) {
@@ -151,7 +156,13 @@ export class OpenAiService {
       .join('||');
 
     const contextHash = this.hashString(normalizedContext);
-    return `${normalizedMessage}::${contextHash}`;
+    return JSON.stringify([
+      normalizedMessage,
+      contextHash,
+      payload.history ?? [],
+      payload.contextItems.map((item) => item.links ?? []),
+      payload.suggestedSeedQuestions ?? [],
+    ]);
   }
 
   private normalizeCachePart(value: string): string {
