@@ -48,17 +48,14 @@ export class ChatService {
     }
 
     const history = dto.history ?? [];
-    const contextQuestion = [
-      ...history.map((turn) => turn.content),
-      dto.message,
-    ].join('\n');
     const faqMatch = history.length
       ? null
       : await this.faqService.findBestMatch(dto.message);
     let contextItems: KnowledgeContextItem[];
     try {
-      contextItems =
-        await this.knowledgeService.getRelevantContext(contextQuestion);
+      contextItems = history.length
+        ? await this.knowledgeService.getRelevantContext(dto.message, history)
+        : await this.knowledgeService.getRelevantContext(dto.message);
     } catch {
       throw new ServiceUnavailableException(
         'El conocimiento del portfolio no está disponible temporalmente. Intentá de nuevo más tarde.',

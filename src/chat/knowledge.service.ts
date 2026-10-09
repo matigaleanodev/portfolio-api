@@ -7,7 +7,7 @@ import {
 } from './chat-content.config';
 import { CLOUD_KNOWLEDGE_ITEMS } from './knowledge/cloud.knowledge';
 import { PROFILE_KNOWLEDGE_ITEMS } from './knowledge/profile.knowledge';
-import { KnowledgeContextItem } from './chat.types';
+import { ChatCompletionPayload, KnowledgeContextItem } from './chat.types';
 import {
   ChatKnowledgeRepository,
   EditorialKnowledgeArtifact,
@@ -24,8 +24,19 @@ export class KnowledgeService {
     private readonly chatKnowledgeRepository: ChatKnowledgeRepository,
   ) {}
 
-  async getRelevantContext(question: string): Promise<KnowledgeContextItem[]> {
+  async getRelevantContext(
+    question: string,
+    history: ChatCompletionPayload['history'] = [],
+  ): Promise<KnowledgeContextItem[]> {
     const normalized = this.normalize(question);
+    const referenceQuestion =
+      /\b(segundo|primero|otro|ese|estos|ambos|antes|dijiste)\b/.test(
+        normalized,
+      )
+        ? this.normalize(
+            `${question} ${history.map((turn) => turn.content).join(' ')}`,
+          )
+        : normalized;
     const editorialItems = await this.getEditorialKnowledgeItems();
     const namedProjects = editorialItems.filter(
       (item) =>
@@ -35,11 +46,19 @@ export class KnowledgeService {
           item.sourceId.replace(/-/g, ' '),
           item.title.split(' ')[0],
         ].some((name) =>
-          normalized
+          referenceQuestion
             .replace(/\s/g, '')
             .includes(this.normalize(name).replace(/\s/g, '')),
         ),
     );
+    const contactItems =
+      /\b(tarifa|hora|disponibilidad|manana|usuarios|cobra|costo|salario)\b/.test(
+        normalized,
+      )
+        ? CURATED_KNOWLEDGE_ITEMS.filter(
+            (item) => item.sourceId === 'main-contact',
+          )
+        : [];
     const scored = [...CURATED_KNOWLEDGE_ITEMS, ...editorialItems]
       .map((item) => ({
         item,
@@ -50,7 +69,11 @@ export class KnowledgeService {
     const relevant = scored.filter((entry) => entry.score > 0).slice(0, 4);
 
     if (relevant.length > 0) {
-      return [...namedProjects, ...relevant.map((entry) => entry.item)]
+      return [
+        ...contactItems,
+        ...namedProjects,
+        ...relevant.map((entry) => entry.item),
+      ]
         .filter((item, index, items) => items.indexOf(item) === index)
         .slice(0, Math.max(4, namedProjects.length));
     }

@@ -2,6 +2,20 @@ import { KnowledgeService } from './knowledge.service';
 import { ChatKnowledgeRepository } from './chat-knowledge.repository';
 
 describe('KnowledgeService', () => {
+  it('prioriza contacto en una consulta comercial aunque el historial trate de proyectos', async () => {
+    const service = createService({ projects: [], posts: [] });
+    const result = await service.getRelevantContext(
+      '¿Matías puede empezar mañana y cuánto cobra por hora?',
+      [
+        {
+          role: 'assistant',
+          content: 'Foodly Notes y Modo Playa: Angular, NestJS, AWS, Docker',
+        },
+      ],
+    );
+    expect(result[0]?.sourceId).toBe('main-contact');
+    expect(result[0]?.text).toContain('formulario');
+  });
   it.each([
     'Compará Foodly y ModoPlaya: stack y publicación',
     'MODO PLAYA y FÓODLY: qué hace cada uno',
