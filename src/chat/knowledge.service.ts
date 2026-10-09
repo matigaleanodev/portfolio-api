@@ -24,6 +24,12 @@ export class KnowledgeService {
     private readonly chatKnowledgeRepository: ChatKnowledgeRepository,
   ) {}
 
+  /**
+   * Selecciona hechos editoriales sin permitir que el historial desplace la consulta actual.
+   * @param question Consulta actual; determina el ranking y la necesidad de contacto.
+   * @param history Diálogo no confiable usado solo para recuperar entidades en referencias.
+   * @returns Contexto limitado que conserva los proyectos nombrados antes del ranking general.
+   */
   async getRelevantContext(
     question: string,
     history: ChatCompletionPayload['history'] = [],
@@ -44,7 +50,7 @@ export class KnowledgeService {
         [
           item.title,
           item.sourceId.replace(/-/g, ' '),
-          item.title.split(' ')[0],
+          ...(item.sourceId === 'foodly-notes' ? ['Foodly'] : []),
         ].some((name) =>
           referenceQuestion
             .replace(/\s/g, '')
@@ -68,17 +74,13 @@ export class KnowledgeService {
 
     const relevant = scored.filter((entry) => entry.score > 0).slice(0, 4);
 
-    if (relevant.length > 0) {
-      return [
-        ...contactItems,
-        ...namedProjects,
-        ...relevant.map((entry) => entry.item),
-      ]
-        .filter((item, index, items) => items.indexOf(item) === index)
-        .slice(0, Math.max(4, namedProjects.length));
-    }
-
-    return scored.slice(0, 3).map((entry) => entry.item);
+    const rankedItems =
+      relevant.length > 0
+        ? relevant.map((entry) => entry.item)
+        : scored.slice(0, 3).map((entry) => entry.item);
+    return [...contactItems, ...namedProjects, ...rankedItems]
+      .filter((item, index, items) => items.indexOf(item) === index)
+      .slice(0, Math.max(4, namedProjects.length));
   }
 
   private async getEditorialKnowledgeItems(): Promise<KnowledgeContextItem[]> {

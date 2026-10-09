@@ -2,6 +2,18 @@ import { KnowledgeService } from './knowledge.service';
 import { ChatKnowledgeRepository } from './chat-knowledge.repository';
 
 describe('KnowledgeService', () => {
+  it('conserva entidades del historial para una referencia sin keywords de dominio', async () => {
+    const service = createService({
+      projects: [
+        { slug: 'foodly-notes', title: 'Foodly Notes', excerpt: 'Recetas' },
+      ],
+      posts: [],
+    });
+    const result = await service.getRelevantContext('¿Y el otro?', [
+      { role: 'assistant', content: 'Foodly Notes' },
+    ]);
+    expect(result[0]?.sourceId).toBe('foodly-notes');
+  });
   it('prioriza contacto en una consulta comercial aunque el historial trate de proyectos', async () => {
     const service = createService({ projects: [], posts: [] });
     const result = await service.getRelevantContext(

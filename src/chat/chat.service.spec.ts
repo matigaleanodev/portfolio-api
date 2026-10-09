@@ -48,6 +48,17 @@ describe('ChatService', () => {
     ]);
   });
 
+  it('devuelve un error operativo cuando no hay conocimiento disponible', async () => {
+    faqServiceMock.findBestMatch.mockResolvedValue(null);
+    knowledgeServiceMock.getRelevantContext.mockRejectedValue(
+      new Error('unavailable'),
+    );
+    await expect(
+      service.reply({ message: 'Foodly Notes' }),
+    ).rejects.toMatchObject({ status: 503 });
+    expect(openAiServiceMock.generateChatResponse).not.toHaveBeenCalled();
+  });
+
   it('responde por FAQ y conserva el flujo principal', async () => {
     faqServiceMock.findBestMatch.mockResolvedValue({
       id: 'que-tecnologias-usas',

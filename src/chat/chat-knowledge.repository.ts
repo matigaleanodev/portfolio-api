@@ -255,6 +255,9 @@ export class ChatKnowledgeRepository {
       ) {
         throw new Error('Chat knowledge integrity check failed');
       }
+      this.logger.log(
+        `Validated chat knowledge version=${payload.version} hash=${hash}`,
+      );
       return payload.knowledge;
     }
 
@@ -276,7 +279,7 @@ export class ChatKnowledgeRepository {
 
     return (
       candidate.version === 1 &&
-      typeof candidate.generatedAt === 'string' &&
+      this.isNonEmptyString(candidate.generatedAt) &&
       typeof candidate.contentHash === 'string' &&
       this.isEnvelopeSource(candidate.source) &&
       this.isEditorialArtifact(candidate.knowledge)
@@ -308,7 +311,7 @@ export class ChatKnowledgeRepository {
       candidate.projects !== undefined || candidate.posts !== undefined;
 
     return (
-      typeof candidate.generatedAt === 'string' &&
+      this.isNonEmptyString(candidate.generatedAt) &&
       hasKnowledgeCollections &&
       this.isProjectEntries(candidate.projects) &&
       this.isPostEntries(candidate.posts)
@@ -319,14 +322,19 @@ export class ChatKnowledgeRepository {
     return (
       value === undefined ||
       (Array.isArray(value) &&
-        value.every((entry) => this.isProjectEntry(entry)))
+        value.every((entry) => this.isProjectEntry(entry)) &&
+        new Set(value.map((entry: EditorialProjectEntry) => entry.slug))
+          .size === value.length)
     );
   }
 
   private isPostEntries(value: unknown): boolean {
     return (
       value === undefined ||
-      (Array.isArray(value) && value.every((entry) => this.isPostEntry(entry)))
+      (Array.isArray(value) &&
+        value.every((entry) => this.isPostEntry(entry)) &&
+        new Set(value.map((entry: EditorialPostEntry) => entry.slug)).size ===
+          value.length)
     );
   }
 
@@ -338,9 +346,9 @@ export class ChatKnowledgeRepository {
     const candidate = value as Record<string, unknown>;
 
     return (
-      typeof candidate.slug === 'string' &&
-      typeof candidate.title === 'string' &&
-      typeof candidate.excerpt === 'string' &&
+      this.isNonEmptyString(candidate.slug) &&
+      this.isNonEmptyString(candidate.title) &&
+      this.isNonEmptyString(candidate.excerpt) &&
       this.isStringArray(candidate.stack) &&
       this.isKnowledgeLinks(candidate.links) &&
       this.isStringArray(candidate.highlights) &&
@@ -357,13 +365,13 @@ export class ChatKnowledgeRepository {
     const candidate = value as Record<string, unknown>;
 
     return (
-      typeof candidate.slug === 'string' &&
-      typeof candidate.title === 'string' &&
-      typeof candidate.excerpt === 'string' &&
+      this.isNonEmptyString(candidate.slug) &&
+      this.isNonEmptyString(candidate.title) &&
+      this.isNonEmptyString(candidate.excerpt) &&
       typeof candidate.date === 'string' &&
       this.isStringArray(candidate.tags) &&
       (candidate.canonicalUrl === undefined ||
-        typeof candidate.canonicalUrl === 'string') &&
+        this.isPublicUrl(candidate.canonicalUrl)) &&
       (candidate.summary === undefined ||
         typeof candidate.summary === 'string') &&
       (candidate.searchText === undefined ||
@@ -383,8 +391,8 @@ export class ChatKnowledgeRepository {
           const candidate = entry as Record<string, unknown>;
 
           return (
-            typeof candidate.label === 'string' &&
-            typeof candidate.url === 'string' &&
+            this.isNonEmptyString(candidate.label) &&
+            this.isPublicUrl(candidate.url) &&
             (candidate.icon === undefined || typeof candidate.icon === 'string')
           );
         }))
@@ -395,8 +403,26 @@ export class ChatKnowledgeRepository {
     return (
       value === undefined ||
       (Array.isArray(value) &&
-        value.every((entry) => typeof entry === 'string'))
+        value.every((entry) => this.isNonEmptyString(entry)))
     );
+  }
+
+  private isNonEmptyString(value: unknown): value is string {
+    return typeof value === 'string' && value.trim().length > 0;
+  }
+
+  private isPublicUrl(value: unknown): boolean {
+    if (!this.isNonEmptyString(value)) return false;
+    try {
+      const url = new URL(value);
+      return (
+        ['https:', 'http:'].includes(url.protocol) &&
+        !url.username &&
+        !url.password
+      );
+    } catch {
+      return false;
+    }
   }
 
   private withTimeout<T>(
