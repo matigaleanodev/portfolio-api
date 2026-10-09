@@ -25,6 +25,7 @@ describe('ChatService', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     faqServiceMock.getSystemEntry.mockResolvedValue(null);
+    knowledgeServiceMock.getRelevantContext.mockResolvedValue([]);
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -45,6 +46,17 @@ describe('ChatService', () => {
       '¿Quién sos y a qué te dedicás?',
       '¿Qué tecnologías usás?',
     ]);
+  });
+
+  it('devuelve un error operativo cuando no hay conocimiento disponible', async () => {
+    faqServiceMock.findBestMatch.mockResolvedValue(null);
+    knowledgeServiceMock.getRelevantContext.mockRejectedValue(
+      new Error('unavailable'),
+    );
+    await expect(
+      service.reply({ message: 'Foodly Notes' }),
+    ).rejects.toMatchObject({ status: 503 });
+    expect(openAiServiceMock.generateChatResponse).not.toHaveBeenCalled();
   });
 
   it('responde por FAQ y conserva el flujo principal', async () => {
@@ -131,8 +143,8 @@ describe('ChatService', () => {
     });
 
     expect(result.source).toBe('fallback');
-    expect(result.answer).toContain('Según el portfolio');
-    expect(result.answer).toContain('Play Store');
+    expect(result.answer).toContain('No pude generar una respuesta');
+    expect(result.answer).not.toContain('No tengo esa información');
     expect(result.suggestedQuestions).toEqual([
       '¿Qué tecnologías usaste en ese proyecto?',
       '¿Qué links públicos tiene ese proyecto?',
@@ -227,7 +239,7 @@ describe('ChatService', () => {
     });
 
     expect(result.source).toBe('fallback');
-    expect(result.answer).toContain('Según el portfolio');
+    expect(result.answer).toContain('No pude generar una respuesta');
     expect(result.suggestedQuestions).toEqual([
       '¿Cómo está dividido el ecosistema portfolio?',
       '¿Qué resolviste con AWS Lambda y storage?',

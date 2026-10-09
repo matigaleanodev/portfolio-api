@@ -1,6 +1,14 @@
 import { OpenAiService } from './openai.service';
 
 describe('OpenAiService', () => {
+  const contextItems = [
+    {
+      sourceType: 'project' as const,
+      sourceId: 'modo-playa',
+      title: 'Modo Playa',
+      text: 'Alojamientos con ownerId. Publicada en Google Play.',
+    },
+  ];
   const originalFetch = global.fetch;
   const originalApiKey = process.env.OPENAI_API_KEY;
   const originalModel = process.env.OPENAI_CHAT_MODEL;
@@ -25,6 +33,114 @@ describe('OpenAiService', () => {
     } else {
       process.env.OPENAI_CHAT_MODEL = originalModel;
     }
+  });
+
+  it.each([
+    '',
+    '   ',
+    'invalid-json',
+    '{}',
+    '{"answer":"   ","suggestedQuestions":[]}',
+  ])('rechaza respuesta vacía o malformada: %s', async (text) => {
+    global.fetch = jest.fn<typeof fetch>().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ output: [{ content: [{ text }] }] }),
+    } as Response);
+    expect(
+      await new OpenAiService().generateChatResponse({
+        userMessage: 'Modo Playa',
+        contextItems,
+      }),
+    ).toBeNull();
+  });
+
+  it('corta la llamada al proveedor a los 15 segundos', async () => {
+    jest.useFakeTimers();
+    try {
+      global.fetch = jest.fn<typeof fetch>().mockImplementation(
+        (_url: RequestInfo | URL, options?: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            options?.signal?.addEventListener('abort', () =>
+              reject(new Error('aborted')),
+            );
+          }),
+      );
+      const result = new OpenAiService().generateChatResponse({
+        userMessage: 'Modo Playa',
+        contextItems,
+      });
+      await jest.advanceTimersByTimeAsync(15_000);
+      expect(await result).toBeNull();
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('separa cache por historial, enlaces y hechos; envía el historial en orden', async () => {
+    const fetchMock = jest.fn<typeof fetch>().mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            output: [
+              {
+                content: [
+                  {
+                    text: JSON.stringify({
+                      answer: 'Respuesta',
+                      suggestedQuestions: [],
+                    }),
+                  },
+                ],
+              },
+            ],
+          }),
+      } as Response),
+    );
+    global.fetch = fetchMock;
+    const service = new OpenAiService();
+    const firstHistory = [
+      {
+        role: 'assistant' as const,
+        content: 'Foodly Notes, después Modo Playa',
+      },
+    ];
+    await service.generateChatResponse({
+      userMessage: 'El segundo',
+      contextItems,
+      history: firstHistory,
+    });
+    await service.generateChatResponse({
+      userMessage: 'El segundo',
+      contextItems,
+      history: [
+        { role: 'assistant', content: 'Modo Playa, después Foodly Notes' },
+      ],
+    });
+    await service.generateChatResponse({
+      userMessage: 'El segundo',
+      contextItems: [{ ...contextItems[0], text: 'Hechos actualizados' }],
+      history: firstHistory,
+    });
+    await service.generateChatResponse({
+      userMessage: 'El segundo',
+      contextItems: [
+        {
+          ...contextItems[0],
+          links: [{ label: 'Portfolio', url: 'https://matiasgaleano.dev' }],
+        },
+      ],
+      history: firstHistory,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    const calls = fetchMock.mock.calls as unknown as Parameters<typeof fetch>[];
+    const body = JSON.parse(calls[0]?.[1]?.body as string) as {
+      input: { role: string; content: string }[];
+    };
+    expect(body.input[1]).toEqual(firstHistory[0]);
+    expect(body.input[0]?.content).toContain('datos no confiables');
+    expect(body.input.at(-1)?.content).toContain('ownerId');
   });
 
   it('retorna null si no hay contexto', async () => {

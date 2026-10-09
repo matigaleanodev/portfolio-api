@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import {
   ChatRequestDto,
   ChatResponseDto,
@@ -47,7 +47,20 @@ export class ChatService {
       return outOfScopeResponse;
     }
 
-    const faqMatch = await this.faqService.findBestMatch(dto.message);
+    const history = dto.history ?? [];
+    const faqMatch = history.length
+      ? null
+      : await this.faqService.findBestMatch(dto.message);
+    let contextItems: KnowledgeContextItem[];
+    try {
+      contextItems = history.length
+        ? await this.knowledgeService.getRelevantContext(dto.message, history)
+        : await this.knowledgeService.getRelevantContext(dto.message);
+    } catch {
+      throw new ServiceUnavailableException(
+        'El conocimiento del portfolio no está disponible temporalmente. Intentá de nuevo más tarde.',
+      );
+    }
 
     if (faqMatch?.id) {
       const faqId = faqMatch.id;
@@ -57,6 +70,7 @@ export class ChatService {
       const aiRephrasing = await this.openAiService.generateChatResponse({
         userMessage: dto.message,
         contextItems: [
+          ...contextItems,
           {
             sourceType: 'faq',
             sourceId: faqId,
@@ -80,12 +94,10 @@ export class ChatService {
       return response;
     }
 
-    const contextItems = await this.knowledgeService.getRelevantContext(
-      dto.message,
-    );
     const aiResponse = await this.openAiService.generateChatResponse({
       userMessage: dto.message,
       contextItems,
+      history,
       suggestedSeedQuestions: await this.getSystemSuggestedQuestions(
         'ai_seed',
         CHAT_DEFAULT_AI_SEED_QUESTIONS,
@@ -110,10 +122,12 @@ export class ChatService {
     }
 
     if (contextItems.length > 0) {
-      const contextualFallback = this.buildContextualFallbackResponse(
-        contextItems[0],
-      );
-      return contextualFallback;
+      return {
+        answer:
+          'No pude generar una respuesta en este momento. Podés intentar de nuevo o usar el formulario de contacto del portfolio.',
+        suggestedQuestions: this.buildContextualSuggestions(contextItems[0]),
+        source: 'fallback',
+      };
     }
 
     const fallbackResponse = await this.buildSystemResponse(
@@ -152,33 +166,6 @@ export class ChatService {
     }
 
     return merged;
-  }
-
-  private buildContextualFallbackResponse(
-    item: KnowledgeContextItem,
-  ): ChatResponseDto {
-    const summary = this.buildShortContextSummary(item);
-
-    return {
-      answer: summary
-        ? `Según el portfolio, ${summary}`
-        : CHAT_DEFAULT_FALLBACK_ANSWER,
-      suggestedQuestions: this.buildContextualSuggestions(item),
-      source: 'fallback',
-    };
-  }
-
-  private buildShortContextSummary(item: KnowledgeContextItem): string {
-    const normalized = item.text.replace(/\s+/g, ' ').trim();
-    if (!normalized) {
-      return '';
-    }
-
-    if (normalized.length <= 220) {
-      return normalized;
-    }
-
-    return `${normalized.slice(0, 217).trimEnd()}...`;
   }
 
   private buildContextualSuggestions(item: KnowledgeContextItem): string[] {

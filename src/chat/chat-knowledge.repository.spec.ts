@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { ConfigService } from '@nestjs/config';
@@ -19,6 +20,33 @@ jest.mock('@aws-sdk/client-s3', () => ({
 }));
 
 describe('ChatKnowledgeRepository', () => {
+  it.each(['checksum', 'version'])(
+    'rechaza un envelope con %s inválido sin fallback válido',
+    async (failure) => {
+      const envelope = buildEnvelope();
+      if (failure === 'checksum') envelope.contentHash = 'sha256:corrupt';
+      else envelope.version = 2;
+      sendMock.mockResolvedValue({
+        Body: {
+          transformToString: () => Promise.resolve(JSON.stringify(envelope)),
+        },
+      });
+      const directory = await fs.mkdtemp(
+        path.join(os.tmpdir(), 'portfolio-invalid-envelope-'),
+      );
+      jest.spyOn(process, 'cwd').mockReturnValue(directory);
+      const repository = createRepository({
+        R2_ENDPOINT: 'https://r2.example.com',
+        R2_BUCKET: 'test',
+        R2_ACCESS_KEY_ID: 'test',
+        R2_SECRET_ACCESS_KEY: 'test',
+      });
+      await expect(repository.getKnowledge()).rejects.toThrow(
+        'Chat knowledge is unavailable',
+      );
+      await fs.rm(directory, { recursive: true });
+    },
+  );
   afterEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
@@ -140,14 +168,14 @@ function createRepository(
 }
 
 function buildEnvelope(): Record<string, unknown> {
-  return {
+  const envelope = {
     version: 1,
     generatedAt: new Date().toISOString(),
     source: {
       repository: 'portfolio',
       artifactPath: '.generated/chat/knowledge.json',
     },
-    contentHash: 'sha256:test',
+    contentHash: '',
     knowledge: {
       generatedAt: new Date().toISOString(),
       projects: [
@@ -160,6 +188,9 @@ function buildEnvelope(): Record<string, unknown> {
       posts: [],
     },
   };
+  envelope.generatedAt = envelope.knowledge.generatedAt;
+  envelope.contentHash = `sha256:${createHash('sha256').update(JSON.stringify(envelope.knowledge)).digest('hex')}`;
+  return envelope;
 }
 
 async function writeKnowledgeArtifact(

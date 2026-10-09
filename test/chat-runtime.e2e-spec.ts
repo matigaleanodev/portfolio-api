@@ -92,8 +92,8 @@ describe('Chat runtime (e2e)', () => {
       .expect(201)
       .expect(({ body }: { body: { answer: string; source: string } }) => {
         expect(body.source).toBe('fallback');
-        expect(body.answer).toContain('Según el portfolio');
-        expect(body.answer).toContain('Play Store');
+        expect(body.answer).toContain('No pude generar una respuesta');
+        expect(body.answer).not.toContain('No tengo esa información');
       });
 
     cwdSpy.mockRestore();

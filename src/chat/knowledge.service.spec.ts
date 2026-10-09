@@ -2,6 +2,67 @@ import { KnowledgeService } from './knowledge.service';
 import { ChatKnowledgeRepository } from './chat-knowledge.repository';
 
 describe('KnowledgeService', () => {
+  it('conserva entidades del historial para una referencia sin keywords de dominio', async () => {
+    const service = createService({
+      projects: [
+        { slug: 'foodly-notes', title: 'Foodly Notes', excerpt: 'Recetas' },
+      ],
+      posts: [],
+    });
+    const result = await service.getRelevantContext('¿Y el otro?', [
+      { role: 'assistant', content: 'Foodly Notes' },
+    ]);
+    expect(result[0]?.sourceId).toBe('foodly-notes');
+  });
+  it('prioriza contacto en una consulta comercial aunque el historial trate de proyectos', async () => {
+    const service = createService({ projects: [], posts: [] });
+    const result = await service.getRelevantContext(
+      '¿Matías puede empezar mañana y cuánto cobra por hora?',
+      [
+        {
+          role: 'assistant',
+          content: 'Foodly Notes y Modo Playa: Angular, NestJS, AWS, Docker',
+        },
+      ],
+    );
+    expect(result[0]?.sourceId).toBe('main-contact');
+    expect(result[0]?.text).toContain('formulario');
+  });
+  it.each([
+    'Compará Foodly y ModoPlaya: stack y publicación',
+    'MODO PLAYA y FÓODLY: qué hace cada uno',
+  ])(
+    'incluye ambos proyectos antes de aplicar el límite: %s',
+    async (question) => {
+      const service = createService({
+        generatedAt: '2026-10-09T00:00:00Z',
+        projects: [
+          { slug: 'foodly-notes', title: 'Foodly Notes', excerpt: 'Recetas' },
+          { slug: 'modo-playa', title: 'Modo Playa', excerpt: 'Alojamientos' },
+        ],
+        posts: Array.from({ length: 8 }, (_, index) => ({
+          slug: `post-${index}`,
+          title: question,
+          excerpt: question,
+          date: '2026-10-09',
+        })),
+      });
+      const result = await service.getRelevantContext(question);
+      expect(result.slice(0, 2).map((item) => item.sourceId)).toEqual([
+        'foodly-notes',
+        'modo-playa',
+      ]);
+    },
+  );
+
+  it('usa la ubicación actual sin recurrir a posts históricos', async () => {
+    const result = await createService({
+      projects: [],
+      posts: [],
+    }).getRelevantContext('perfil fullstack');
+    expect(result.map((item) => item.text).join(' ')).toContain('Villa Gesell');
+    expect(result.map((item) => item.text).join(' ')).not.toContain('Posadas');
+  });
   afterEach(() => {
     jest.restoreAllMocks();
   });

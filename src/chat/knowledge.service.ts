@@ -7,7 +7,7 @@ import {
 } from './chat-content.config';
 import { CLOUD_KNOWLEDGE_ITEMS } from './knowledge/cloud.knowledge';
 import { PROFILE_KNOWLEDGE_ITEMS } from './knowledge/profile.knowledge';
-import { KnowledgeContextItem } from './chat.types';
+import { ChatCompletionPayload, KnowledgeContextItem } from './chat.types';
 import {
   ChatKnowledgeRepository,
   EditorialKnowledgeArtifact,
@@ -24,9 +24,47 @@ export class KnowledgeService {
     private readonly chatKnowledgeRepository: ChatKnowledgeRepository,
   ) {}
 
-  async getRelevantContext(question: string): Promise<KnowledgeContextItem[]> {
+  /**
+   * Selecciona hechos editoriales sin permitir que el historial desplace la consulta actual.
+   * @param question Consulta actual; determina el ranking y la necesidad de contacto.
+   * @param history Diálogo no confiable usado solo para recuperar entidades en referencias.
+   * @returns Contexto limitado que conserva los proyectos nombrados antes del ranking general.
+   */
+  async getRelevantContext(
+    question: string,
+    history: ChatCompletionPayload['history'] = [],
+  ): Promise<KnowledgeContextItem[]> {
     const normalized = this.normalize(question);
+    const referenceQuestion =
+      /\b(segundo|primero|otro|ese|estos|ambos|antes|dijiste)\b/.test(
+        normalized,
+      )
+        ? this.normalize(
+            `${question} ${history.map((turn) => turn.content).join(' ')}`,
+          )
+        : normalized;
     const editorialItems = await this.getEditorialKnowledgeItems();
+    const namedProjects = editorialItems.filter(
+      (item) =>
+        item.sourceType === 'project' &&
+        [
+          item.title,
+          item.sourceId.replace(/-/g, ' '),
+          ...(item.sourceId === 'foodly-notes' ? ['Foodly'] : []),
+        ].some((name) =>
+          referenceQuestion
+            .replace(/\s/g, '')
+            .includes(this.normalize(name).replace(/\s/g, '')),
+        ),
+    );
+    const contactItems =
+      /\b(tarifa|hora|disponibilidad|manana|usuarios|cobra|costo|salario)\b/.test(
+        normalized,
+      )
+        ? CURATED_KNOWLEDGE_ITEMS.filter(
+            (item) => item.sourceId === 'main-contact',
+          )
+        : [];
     const scored = [...CURATED_KNOWLEDGE_ITEMS, ...editorialItems]
       .map((item) => ({
         item,
@@ -36,11 +74,13 @@ export class KnowledgeService {
 
     const relevant = scored.filter((entry) => entry.score > 0).slice(0, 4);
 
-    if (relevant.length > 0) {
-      return relevant.map((entry) => entry.item);
-    }
-
-    return scored.slice(0, 3).map((entry) => entry.item);
+    const rankedItems =
+      relevant.length > 0
+        ? relevant.map((entry) => entry.item)
+        : scored.slice(0, 3).map((entry) => entry.item);
+    return [...contactItems, ...namedProjects, ...rankedItems]
+      .filter((item, index, items) => items.indexOf(item) === index)
+      .slice(0, Math.max(4, namedProjects.length));
   }
 
   private async getEditorialKnowledgeItems(): Promise<KnowledgeContextItem[]> {

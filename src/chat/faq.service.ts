@@ -21,7 +21,11 @@ export class FaqService {
     let activeFaqs =
       keywordTokens.length > 0
         ? CHAT_FAQ_ITEMS.filter((faq) => {
-            if (!faq.active) {
+            if (
+              !faq.active ||
+              faq.tags.includes('system') ||
+              faq.tags.includes('projects')
+            ) {
               return false;
             }
 
@@ -34,7 +38,12 @@ export class FaqService {
         : [];
 
     if (activeFaqs.length === 0) {
-      activeFaqs = CHAT_FAQ_ITEMS.filter((faq) => faq.active);
+      activeFaqs = CHAT_FAQ_ITEMS.filter(
+        (faq) =>
+          faq.active &&
+          !faq.tags.includes('system') &&
+          !faq.tags.includes('projects'),
+      );
     }
 
     let bestMatch: ChatFaqEntry | null = null;
@@ -133,10 +142,6 @@ export class FaqService {
 
     if (input === candidate) {
       return 1;
-    }
-
-    if (input.includes(candidate) || candidate.includes(input)) {
-      return 0.9;
     }
 
     const inputTokens = new Set(input.split(' '));
