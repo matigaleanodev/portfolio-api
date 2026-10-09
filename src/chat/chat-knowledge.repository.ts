@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import fs from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import {
   getChatKnowledgeR2Config,
   resolveExistingEditorialKnowledgePath,
@@ -241,6 +242,19 @@ export class ChatKnowledgeRepository {
     payload: unknown,
   ): EditorialKnowledgeArtifact {
     if (this.isPublishedEnvelope(payload)) {
+      const knowledge = payload.knowledge;
+      const normalizedArtifact = {
+        generatedAt: knowledge.generatedAt,
+        ...(knowledge.projects ? { projects: knowledge.projects } : {}),
+        ...(knowledge.posts ? { posts: knowledge.posts } : {}),
+      };
+      const hash = `sha256:${createHash('sha256').update(JSON.stringify(normalizedArtifact)).digest('hex')}`;
+      if (
+        payload.contentHash !== hash ||
+        payload.generatedAt !== knowledge.generatedAt
+      ) {
+        throw new Error('Chat knowledge integrity check failed');
+      }
       return payload.knowledge;
     }
 
