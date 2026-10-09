@@ -6,7 +6,7 @@ export const PROFILE_KNOWLEDGE_ITEMS: readonly KnowledgeContextItem[] = [
     sourceId: 'main-profile',
     title: 'Perfil profesional',
     text: [
-      'Matías Galeano es Fullstack Product Developer de Posadas, Misiones, Argentina.',
+      'Matías Galeano es Full Stack Developer de Villa Gesell, Argentina.',
       'Se mueve con comodidad entre frontend, backend, cloud y arquitectura.',
       'El portfolio busca mostrar experiencia real construyendo productos, tomando decisiones técnicas con criterio y armando soluciones que se puedan mantener.',
     ].join(' '),

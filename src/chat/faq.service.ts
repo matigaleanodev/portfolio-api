@@ -135,10 +135,6 @@ export class FaqService {
       return 1;
     }
 
-    if (input.includes(candidate) || candidate.includes(input)) {
-      return 0.9;
-    }
-
     const inputTokens = new Set(input.split(' '));
     const candidateTokens = new Set(candidate.split(' '));
     const intersection = [...inputTokens].filter((t) =>

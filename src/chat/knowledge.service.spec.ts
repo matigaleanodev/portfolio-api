@@ -2,6 +2,41 @@ import { KnowledgeService } from './knowledge.service';
 import { ChatKnowledgeRepository } from './chat-knowledge.repository';
 
 describe('KnowledgeService', () => {
+  it.each([
+    'Compará Foodly y ModoPlaya: stack y publicación',
+    'MODO PLAYA y FÓODLY: qué hace cada uno',
+  ])(
+    'incluye ambos proyectos antes de aplicar el límite: %s',
+    async (question) => {
+      const service = createService({
+        generatedAt: '2026-10-09T00:00:00Z',
+        projects: [
+          { slug: 'foodly-notes', title: 'Foodly Notes', excerpt: 'Recetas' },
+          { slug: 'modo-playa', title: 'Modo Playa', excerpt: 'Alojamientos' },
+        ],
+        posts: Array.from({ length: 8 }, (_, index) => ({
+          slug: `post-${index}`,
+          title: question,
+          excerpt: question,
+          date: '2026-10-09',
+        })),
+      });
+      const result = await service.getRelevantContext(question);
+      expect(result.slice(0, 2).map((item) => item.sourceId)).toEqual([
+        'foodly-notes',
+        'modo-playa',
+      ]);
+    },
+  );
+
+  it('usa la ubicación actual sin recurrir a posts históricos', async () => {
+    const result = await createService({
+      projects: [],
+      posts: [],
+    }).getRelevantContext('perfil fullstack');
+    expect(result.map((item) => item.text).join(' ')).toContain('Villa Gesell');
+    expect(result.map((item) => item.text).join(' ')).not.toContain('Posadas');
+  });
   afterEach(() => {
     jest.restoreAllMocks();
   });

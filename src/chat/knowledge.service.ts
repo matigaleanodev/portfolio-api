@@ -27,6 +27,19 @@ export class KnowledgeService {
   async getRelevantContext(question: string): Promise<KnowledgeContextItem[]> {
     const normalized = this.normalize(question);
     const editorialItems = await this.getEditorialKnowledgeItems();
+    const namedProjects = editorialItems.filter(
+      (item) =>
+        item.sourceType === 'project' &&
+        [
+          item.title,
+          item.sourceId.replace(/-/g, ' '),
+          item.title.split(' ')[0],
+        ].some((name) =>
+          normalized
+            .replace(/\s/g, '')
+            .includes(this.normalize(name).replace(/\s/g, '')),
+        ),
+    );
     const scored = [...CURATED_KNOWLEDGE_ITEMS, ...editorialItems]
       .map((item) => ({
         item,
@@ -37,7 +50,9 @@ export class KnowledgeService {
     const relevant = scored.filter((entry) => entry.score > 0).slice(0, 4);
 
     if (relevant.length > 0) {
-      return relevant.map((entry) => entry.item);
+      return [...namedProjects, ...relevant.map((entry) => entry.item)]
+        .filter((item, index, items) => items.indexOf(item) === index)
+        .slice(0, Math.max(4, namedProjects.length));
     }
 
     return scored.slice(0, 3).map((entry) => entry.item);
