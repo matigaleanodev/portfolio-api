@@ -78,7 +78,7 @@ La configuración de entorno está documentada en `.env.example`.
 
 ## Version
 
-Versión actual de la aplicación: **1.2.0**
+Versión actual de la aplicación: **1.3.0**
 
 ## Contenido editorial programado
 

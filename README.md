@@ -78,7 +78,7 @@ Environment setup is documented in `.env.example`.
 
 ## Version
 
-Current application version: **1.2.0**
+Current application version: **1.3.0**
 
 ## Scheduled editorial content
 
