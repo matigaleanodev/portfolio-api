@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import request from 'supertest';
 import { ChatModule } from '../src/chat/chat.module';
+import { ChatKnowledgeRepository } from '../src/chat/chat-knowledge.repository';
 
 describe('Contrato conversacional del chat', () => {
   let app: INestApplication;
@@ -110,6 +111,76 @@ describe('Contrato conversacional del chat', () => {
     expect(body).toContain('Alojamientos');
     expect(body).toContain('ownerId');
     expect(body).not.toContain('PostgreSQL');
+  });
+
+  it('mantiene el perfil disponible por HTTP sin consultar el repositorio editorial', async () => {
+    const repository = jest
+      .spyOn(app.get(ChatKnowledgeRepository), 'getKnowledge')
+      .mockRejectedValue(new Error('editorial no disponible'));
+    try {
+      await request(server())
+        .post('/api/chat')
+        .send({
+          message: '¿En qué empresa trabajás hoy?',
+          history: [{ role: 'user', content: 'Contame sobre vos' }],
+        })
+        .expect(201);
+      expect(requestBody(0)).toContain('Banco Comafi a través de Boreal IT');
+      expect(repository).not.toHaveBeenCalled();
+      await request(server())
+        .post('/api/chat')
+        .send({ message: '¿Qué hace Modo Playa?' })
+        .expect(503);
+      expect(repository).toHaveBeenCalledTimes(1);
+    } finally {
+      repository.mockRestore();
+    }
+  });
+
+  it.each([
+    [
+      '¿Dónde trabajás?',
+      [
+        'Banco Comafi a través de Boreal IT',
+        'Fondos Comunes de Inversión',
+        'AWS CDK',
+      ],
+    ],
+    [
+      '¿Qué bases de datos usás?',
+      ['SQL Server', 'Amazon RDS', 'Amazon Aurora', 'DynamoDB'],
+    ],
+    [
+      '¿Qué experiencia tenés con AWS?',
+      ['Amazon SQS', 'AWS Lambda', 'AWS CDK'],
+    ],
+  ])(
+    'envía hechos profesionales completos al proveedor: %s',
+    async (message, facts) => {
+      await request(server()).post('/api/chat').send({ message }).expect(201);
+      const body = requestBody(0);
+      for (const fact of facts) expect(body).toContain(fact);
+      expect(body).not.toContain('Stack canónico del portfolio');
+    },
+  );
+
+  it('conserva la respuesta laboral canónica si el proveedor falla', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 503 } as Response);
+    const response = await request(server())
+      .post('/api/chat')
+      .send({ message: '¿En qué empresa laburás?' })
+      .expect(201);
+    const body = response.body as {
+      source: string;
+      answer: string;
+      suggestedQuestions: string[];
+    };
+    expect(body.source).toBe('faq');
+    expect(body.answer).toMatch(
+      /^Trabajo en Banco Comafi a través de Boreal IT/,
+    );
+    expect(body.answer).toContain('consultora que me emplea');
+    expect(body.suggestedQuestions).toHaveLength(2);
   });
 
   it('envía el orden conversacional y no conserva historial por sessionId', async () => {

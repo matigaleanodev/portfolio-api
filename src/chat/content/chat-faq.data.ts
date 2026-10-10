@@ -1,3 +1,5 @@
+import { PROFESSIONAL_PROFILE } from '../knowledge/professional-profile';
+
 export type ChatSystemEntryKey =
   | 'out_of_scope'
   | 'fallback'
@@ -24,9 +26,48 @@ export type ChatFaqEntry = ChatFaqSeedEntry & {
 
 const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   {
+    question: '¿Dónde trabajás actualmente?',
+    answer: [
+      PROFESSIONAL_PROFILE.currentWork,
+      PROFESSIONAL_PROFILE.currentStack,
+    ].join(' '),
+    aliases: [
+      'donde trabajas',
+      'donde trabajas actualmente',
+      'en que empresa trabajas',
+      'en que empresa laburas',
+      'para quien trabajas',
+      'trabajas en comafi',
+    ],
+    tags: ['experience'],
+    isStarterCandidate: false,
+    isFixedStarter: false,
+    suggestedQuestions: [
+      '¿Qué hacés en el área de Fondos Comunes de Inversión?',
+      '¿Qué tecnologías usás en Comafi?',
+    ],
+    active: true,
+    usageCount: 0,
+    starterPriority: 0,
+  },
+  {
+    question: '¿Qué experiencia tenés con AWS?',
+    answer: PROFESSIONAL_PROFILE.aws,
+    aliases: ['experiencia con aws', 'que experiencia tenes con aws'],
+    tags: ['skills', 'experience'],
+    isStarterCandidate: false,
+    isFixedStarter: false,
+    suggestedQuestions: [
+      '¿Qué tecnologías usás en Comafi?',
+      '¿Con qué bases de datos trabajás?',
+    ],
+    active: true,
+    usageCount: 0,
+    starterPriority: 0,
+  },
+  {
     question: '¿Quién sos y a qué te dedicás?',
-    answer:
-      'Soy Matías Galeano, Fullstack Product Developer. Trabajo en aplicaciones web y móviles en producción y me muevo bastante parejo entre frontend, backend, cloud y arquitectura. En este portfolio muestro proyectos reales, stack y experiencia técnica.',
+    answer: PROFESSIONAL_PROFILE.introduction,
     aliases: [
       'quien sos',
       'a que te dedicas',
@@ -48,8 +89,10 @@ const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   },
   {
     question: '¿Qué tecnologías usás?',
-    answer:
-      'Trabajo principalmente con TypeScript, Angular, Ionic, Node.js y NestJS. Hoy en el laburo estoy con Angular en frontend, un backend híbrido entre monolito NestJS y microservicios en AWS Lambda, PostgreSQL como base de datos y herramientas como Docker, GitHub Actions, EC2, ECS, ECR, S3, CloudFront, CloudWatch y Cloudflare R2.',
+    answer: [
+      PROFESSIONAL_PROFILE.stack,
+      PROFESSIONAL_PROFILE.currentStack,
+    ].join(' '),
     aliases: ['que tecnologias usas', 'stack', 'stack tecnico', 'herramientas'],
     tags: ['skills'],
     isStarterCandidate: true,
@@ -66,8 +109,7 @@ const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   },
   {
     question: '¿Qué bases de datos usás?',
-    answer:
-      'Actualmente trabajo con PostgreSQL en mi rol en Boreal IT para Banco Comafi. Además usé MySQL en mi etapa en Ingertec y MongoDB en proyectos personales.',
+    answer: PROFESSIONAL_PROFILE.databases,
     aliases: [
       'que base de datos usas',
       'que bases de datos usas',
@@ -109,8 +151,11 @@ const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   },
   {
     question: '¿Cuál es tu experiencia laboral?',
-    answer:
-      'Tengo cerca de cuatro años de experiencia trabajando con software en producción. Estuve en Ingertec Argentina hasta abril de 2026 como Fullstack Developer y desde entonces trabajo en Boreal IT para Banco Comafi, en un producto de Fondos Comunes de Inversión con Angular en frontend, backend híbrido entre monolito NestJS y microservicios AWS Lambda, y PostgreSQL.',
+    answer: [
+      PROFESSIONAL_PROFILE.currentWork,
+      PROFESSIONAL_PROFILE.currentStack,
+      PROFESSIONAL_PROFILE.career,
+    ].join(' '),
     aliases: ['experiencia laboral', 'trayectoria', 'experiencia'],
     tags: ['experience'],
     isStarterCandidate: true,
@@ -127,8 +172,11 @@ const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   },
   {
     question: '¿Qué responsabilidades tuviste?',
-    answer:
-      'En lo laboral me tocó desarrollar y hacer evolucionar plataformas en producción, integrar APIs REST, mantener funcionalidades vivas y meter mejoras continuas en frontend y backend. Hoy eso incluye Angular, backend NestJS, microservicios en AWS Lambda y PostgreSQL; en proyectos personales también me encargo de arquitectura, despliegues containerizados, automatización cloud, CI/CD y operación.',
+    answer: [
+      'En lo laboral desarrollo y hago evolucionar plataformas en producción, integro APIs REST y mantengo funcionalidades en frontend y backend.',
+      PROFESSIONAL_PROFILE.currentStack,
+      'En proyectos personales también me encargo de arquitectura, despliegues containerizados, automatización cloud, CI/CD y operación.',
+    ].join(' '),
     aliases: [
       'que responsabilidades tuviste',
       'cuales fueron tus responsabilidades',
@@ -177,8 +225,7 @@ const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   },
   {
     question: '¿Qué tipo de propuestas te interesan?',
-    answer:
-      'Me interesan principalmente roles fullstack orientados a producto, donde frontend, backend y cloud tengan peso real. Busco propuestas remotas, full-time y de largo plazo; no me interesan proyectos cortos ni laburo freelance.',
+    answer: PROFESSIONAL_PROFILE.opportunities,
     aliases: [
       'tipo de propuestas',
       'que propuestas te interesan',
@@ -200,8 +247,7 @@ const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   },
   {
     question: '¿Qué idiomas manejás?',
-    answer:
-      'Español nativo e inglés técnico para documentación, desarrollo y trabajo diario.',
+    answer: PROFESSIONAL_PROFILE.languages,
     aliases: ['idiomas', 'idioma', 'ingles', 'english'],
     tags: ['profile'],
     isStarterCandidate: true,
@@ -255,7 +301,7 @@ const CHAT_FAQ_SEED: readonly ChatFaqSeedEntry[] = [
   {
     question: '__system_fallback__',
     answer:
-      'No tengo esa información disponible en el portfolio por ahora. Si querés, podés preguntarme sobre proyectos, tecnologías o experiencia.',
+      'No tengo esa información confirmada. Podés consultarme sobre mi experiencia, tecnologías o proyectos, o usar el formulario de contacto.',
     aliases: [],
     tags: ['system', 'system:fallback'],
     isStarterCandidate: false,

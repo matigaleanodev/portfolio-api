@@ -41,7 +41,11 @@ describe('ContactService', () => {
   };
 
   beforeEach(async () => {
-    emailsSendMock.mockClear();
+    emailsSendMock.mockReset();
+    emailsSendMock.mockResolvedValue({
+      data: { id: 'email_123' },
+      error: null,
+    });
     (Resend as unknown as jest.Mock).mockClear();
     configServiceMock.get.mockClear();
 
@@ -82,6 +86,20 @@ describe('ContactService', () => {
     expect(args.text).toContain(`Email: ${dto.email}`);
     expect(args.text).toContain('Fecha:');
     expect(args.text).toContain(dto.message);
+  });
+
+  it('rechaza un error devuelto por Resend aunque la promesa se resuelva', async () => {
+    emailsSendMock.mockResolvedValueOnce({
+      data: null,
+      error: { name: 'rate_limit_exceeded', message: 'Too many requests' },
+    });
+    await expect(
+      service.send({
+        name: 'Prueba',
+        email: 'audit@example.com',
+        message: 'Mensaje de prueba',
+      }),
+    ).rejects.toBeInstanceOf(InternalServerErrorException);
   });
 
   it('lanza error controlado cuando falla Resend', async () => {

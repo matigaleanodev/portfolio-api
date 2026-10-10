@@ -8,7 +8,7 @@ export const CLOUD_KNOWLEDGE_ITEMS: readonly KnowledgeContextItem[] = [
     text: [
       'El ecosistema actual está dividido en tres repositorios con responsabilidades claras.',
       '`portfolio` concentra frontend estático, contenido y prerender.',
-      '`portfolio-api` conserva contacto y chatbot.',
+      '`portfolio-api` conserva contacto, chatbot y la fachada HTTP de suscripciones.',
       '`portfolio-cloud` concentra automatización serverless, OpenGraph, suscripciones y procesamiento post-publicación.',
     ].join(' '),
     tags: [
@@ -22,9 +22,9 @@ export const CLOUD_KNOWLEDGE_ITEMS: readonly KnowledgeContextItem[] = [
   {
     sourceType: 'cloud',
     sourceId: 'cloud-lambdas',
-    title: 'Experiencia reciente con AWS Lambda',
+    title: 'AWS Lambda en el portfolio',
     text: [
-      'Se implementaron Lambdas dedicadas para `generate-og`, `notify-post`, `subscribe`, `unsubscribe` y `process-release` dentro de `portfolio-cloud`.',
+      'Se implementaron Lambdas dedicadas para `generate-og`, `notify-post`, `subscribe`, `unsubscribe`, `process-release` y `publish-chat-knowledge` dentro de `portfolio-cloud`.',
       'El enfoque fue mantener handlers chicos, servicios compartidos para proveedores y contratos idempotentes para los flujos editoriales.',
     ].join(' '),
     tags: [

@@ -54,7 +54,7 @@ Current public endpoints:
 - The API must not serve static editorial content.
 - Blog posts and projects remain owned by `portfolio`.
 - Subscription persistence and post-publication automation remain owned by `portfolio-cloud`.
-- The chat runtime resolves the canonical editorial knowledge published from the cloud layer.
+- Chat loads canonical cloud editorial knowledge for projects and posts; known exclusively professional questions use the local profile without depending on R2. See the [assistant audit](docs/assistant-profile-audit.md) for bounded history, real-model evaluation and text-free operational metrics.
 
 ---
 
@@ -78,4 +78,8 @@ Environment setup is documented in `.env.example`.
 
 ## Version
 
-Current application version: **1.2.0**
+Current application version: **1.3.0**
+
+## Scheduled editorial content
+
+The frontend owns publication dates and the daily static deploy; this API does not schedule posts or email. Editorial context filters invalid/future post dates using `America/Argentina/Buenos_Aires`, including cached remote and local fallback knowledge. Cloud normally publishes only the deployed frontend's filtered artifact. Deploy this protection before the frontend scheduler. Editorial and recovery guidance lives in `portfolio/Docs/scheduled-publication.md`.

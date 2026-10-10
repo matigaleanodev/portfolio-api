@@ -21,6 +21,22 @@ describe('FaqService', () => {
     expect(result?.tags).toContain('skills');
   });
 
+  it.each([
+    'donde trabajas?',
+    '¿Dónde trabajás actualmente?',
+    '¿En qué empresa laburás?',
+  ])(
+    'responde el empleo cotidiano y la relación contractual: %s',
+    async (question) => {
+      const result = await service.findBestMatch(question);
+      expect(result?.answer).toMatch(
+        /^Trabajo en Banco Comafi a través de Boreal IT/,
+      );
+      expect(result?.answer).toContain('consultora que me emplea');
+      expect(result?.answer).toContain('Fondos Comunes de Inversión');
+    },
+  );
+
   it('resuelve entradas de sistema sin depender de Mongo', async () => {
     const result = await service.getSystemEntry('fallback');
 

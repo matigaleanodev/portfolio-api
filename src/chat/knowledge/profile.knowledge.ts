@@ -1,4 +1,5 @@
 import { KnowledgeContextItem } from '../chat.types';
+import { PROFESSIONAL_PROFILE } from './professional-profile';
 
 export const PROFILE_KNOWLEDGE_ITEMS: readonly KnowledgeContextItem[] = [
   {
@@ -6,7 +7,7 @@ export const PROFILE_KNOWLEDGE_ITEMS: readonly KnowledgeContextItem[] = [
     sourceId: 'main-profile',
     title: 'Perfil profesional',
     text: [
-      'Matías Galeano es Full Stack Developer de Villa Gesell, Argentina.',
+      PROFESSIONAL_PROFILE.introduction,
       'Se mueve con comodidad entre frontend, backend, cloud y arquitectura.',
       'El portfolio busca mostrar experiencia real construyendo productos, tomando decisiones técnicas con criterio y armando soluciones que se puedan mantener.',
     ].join(' '),
@@ -24,9 +25,9 @@ export const PROFILE_KNOWLEDGE_ITEMS: readonly KnowledgeContextItem[] = [
     sourceId: 'main-stack',
     title: 'Stack principal',
     text: [
-      'Stack principal: TypeScript, Angular, Ionic, Node.js y NestJS.',
-      'Actualmente trabaja con Angular en frontend y un backend híbrido entre monolito NestJS y microservicios con AWS Lambda.',
-      'Trabaja con PostgreSQL en su rol actual y usa con frecuencia Docker, GitHub Actions, AWS Lambda, EC2, ECS, ECR, S3, CloudFront, CloudWatch y Cloudflare R2.',
+      PROFESSIONAL_PROFILE.stack,
+      PROFESSIONAL_PROFILE.currentStack,
+      PROFESSIONAL_PROFILE.tooling,
     ].join(' '),
     tags: [
       'skills',
@@ -54,9 +55,9 @@ export const PROFILE_KNOWLEDGE_ITEMS: readonly KnowledgeContextItem[] = [
     sourceId: 'main-experience',
     title: 'Experiencia laboral',
     text: [
-      'Trabajó en Ingertec Argentina hasta abril de 2026 como Fullstack Developer y desde entonces trabaja en Boreal IT para Banco Comafi.',
-      'En su etapa actual participa en un producto de Fondos Comunes de Inversión con Angular en frontend, backend híbrido entre monolito NestJS y microservicios AWS Lambda, y PostgreSQL como base de datos.',
-      'Acumula cerca de cuatro años de experiencia trabajando con software en producción.',
+      PROFESSIONAL_PROFILE.currentWork,
+      PROFESSIONAL_PROFILE.currentStack,
+      PROFESSIONAL_PROFILE.career,
     ].join(' '),
     tags: [
       'experience',
@@ -67,6 +68,41 @@ export const PROFILE_KNOWLEDGE_ITEMS: readonly KnowledgeContextItem[] = [
       'backend',
       'product',
       'fintech',
+    ],
+  },
+  {
+    sourceType: 'profile',
+    sourceId: 'main-databases',
+    title: 'Experiencia con bases de datos',
+    text: PROFESSIONAL_PROFILE.databases,
+    tags: [
+      'sql server',
+      'mssql',
+      'postgresql',
+      'postgres',
+      'rds',
+      'aurora',
+      'dynamodb',
+      'mysql',
+      'mongodb',
+      'bases de datos',
+    ],
+  },
+  {
+    sourceType: 'profile',
+    sourceId: 'main-aws',
+    title: 'Experiencia profesional con AWS',
+    text: PROFESSIONAL_PROFILE.aws,
+    tags: [
+      'aws',
+      'lambda',
+      'sqs',
+      'colas',
+      'cdk',
+      'dynamodb',
+      'rds',
+      'aurora',
+      'infraestructura como codigo',
     ],
   },
   {
@@ -86,6 +122,16 @@ export const PROFILE_KNOWLEDGE_ITEMS: readonly KnowledgeContextItem[] = [
       'cloud',
       'devops',
     ],
+  },
+  {
+    sourceType: 'profile',
+    sourceId: 'main-career-preferences',
+    title: 'Idiomas y preferencias profesionales',
+    text: [
+      PROFESSIONAL_PROFILE.languages,
+      PROFESSIONAL_PROFILE.opportunities,
+    ].join(' '),
+    tags: ['idiomas', 'ingles', 'english', 'propuestas', 'remoto', 'freelance'],
   },
   {
     sourceType: 'profile',

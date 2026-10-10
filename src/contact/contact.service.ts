@@ -33,12 +33,13 @@ export class ContactService {
           `.trim();
 
     try {
-      await this.resend.emails.send({
+      const result = await this.resend.emails.send({
         from: this.configService.get<string>('CONTACT_FROM_EMAIL')!,
         to: this.configService.get<string>('CONTACT_TO_EMAIL')!,
         subject: 'Nuevo mensaje desde el portfolio',
         text,
       });
+      if (result.error) throw new Error(result.error.message);
     } catch (error) {
       this.logger.error(
         `Failed to send contact email: ${
