@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { isPublicationDue } from './publication';
 import {
   CHAT_BLOG_TOPIC_TERMS,
   CHAT_CLOUD_TOPIC_TERMS,
@@ -103,18 +104,20 @@ export class KnowledgeService {
       links: project.links ?? [],
     }));
 
-    const postItems = (artifact.posts ?? []).map((post) => ({
-      sourceType: 'post' as const,
-      sourceId: post.slug,
-      title: post.title,
-      text: [post.excerpt, post.summary, post.searchText]
-        .filter(Boolean)
-        .join(' '),
-      tags: post.tags ?? [],
-      links: post.canonicalUrl
-        ? [{ label: 'Post del blog', url: post.canonicalUrl }]
-        : [],
-    }));
+    const postItems = (artifact.posts ?? [])
+      .filter((post) => isPublicationDue(post.date))
+      .map((post) => ({
+        sourceType: 'post' as const,
+        sourceId: post.slug,
+        title: post.title,
+        text: [post.excerpt, post.summary, post.searchText]
+          .filter(Boolean)
+          .join(' '),
+        tags: post.tags ?? [],
+        links: post.canonicalUrl
+          ? [{ label: 'Post del blog', url: post.canonicalUrl }]
+          : [],
+      }));
 
     return [...projectItems, ...postItems];
   }

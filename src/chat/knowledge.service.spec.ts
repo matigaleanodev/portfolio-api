@@ -2,6 +2,35 @@ import { KnowledgeService } from './knowledge.service';
 import { ChatKnowledgeRepository } from './chat-knowledge.repository';
 
 describe('KnowledgeService', () => {
+  it('excluye posts futuros e inválidos aunque lleguen en el artifact remoto o local', async () => {
+    const result = await createService({
+      projects: [],
+      posts: [
+        {
+          slug: 'published',
+          title: 'Blog publicado',
+          excerpt: 'Artículo del blog',
+          date: '2020-01-01',
+        },
+        {
+          slug: 'scheduled',
+          title: 'Blog futuro',
+          excerpt: 'Artículo del blog',
+          date: '2999-01-01',
+        },
+        {
+          slug: 'invalid',
+          title: 'Blog inválido',
+          excerpt: 'Artículo del blog',
+          date: '2026-02-30',
+        },
+      ],
+    }).getRelevantContext('¿Qué artículos publicaste en el blog?');
+    expect(result.some((item) => item.sourceId === 'published')).toBe(true);
+    expect(
+      result.some((item) => ['scheduled', 'invalid'].includes(item.sourceId)),
+    ).toBe(false);
+  });
   it('conserva entidades del historial para una referencia sin keywords de dominio', async () => {
     const service = createService({
       projects: [
