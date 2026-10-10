@@ -1,4 +1,5 @@
 import { OpenAiService } from './openai.service';
+import { Logger } from '@nestjs/common';
 
 describe('OpenAiService', () => {
   const contextItems = [
@@ -17,6 +18,74 @@ describe('OpenAiService', () => {
     jest.clearAllMocks();
     process.env.OPENAI_API_KEY = 'test-key';
     process.env.OPENAI_CHAT_MODEL = 'gpt-4.1-mini';
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  it('mide llamadas reales y caché por separado sin duplicar consumo ni registrar respuestas', async () => {
+    const log = jest
+      .spyOn(Logger.prototype, 'log')
+      .mockImplementation(() => undefined);
+    global.fetch = jest.fn<typeof fetch>().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          output: [
+            {
+              content: [
+                {
+                  text: JSON.stringify({
+                    answer: 'Respuesta privada de prueba',
+                    suggestedQuestions: [],
+                  }),
+                },
+              ],
+            },
+          ],
+          usage: {
+            input_tokens: 120,
+            output_tokens: 30,
+            input_tokens_details: { cached_tokens: 80 },
+          },
+        }),
+    } as Response);
+    const service = new OpenAiService();
+    const payload = { userMessage: 'Pregunta privada de prueba', contextItems };
+    await service.generateChatResponse(payload);
+    await service.generateChatResponse(payload);
+    const events = log.mock.calls.map(
+      ([value]) => JSON.parse(value as string) as Record<string, unknown>,
+    );
+    expect(events.map((event) => event.outcome)).toEqual([
+      'success',
+      'cache_hit',
+    ]);
+    expect(events[0]).toMatchObject({
+      inputTokens: 120,
+      outputTokens: 30,
+      cachedInputTokens: 80,
+    });
+    expect(events[1]).not.toHaveProperty('inputTokens');
+    expect(JSON.stringify(events)).not.toContain('privada');
+    expect(
+      [...service['responseCache'].keys()].every((key) =>
+        /^[a-f0-9]{64}$/.test(key),
+      ),
+    ).toBe(true);
+  });
+
+  it('un error de red no vuelca el texto arbitrario de la excepción en logs', async () => {
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    global.fetch = jest
+      .fn<typeof fetch>()
+      .mockRejectedValue(new Error('contenido privado del visitante'));
+    await new OpenAiService().generateChatResponse({
+      userMessage: 'Pregunta',
+      contextItems,
+    });
+    expect(warn).toHaveBeenCalledWith('OpenAI request failed: network_error');
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('privado');
   });
 
   afterAll(() => {
@@ -140,7 +209,9 @@ describe('OpenAiService', () => {
     };
     expect(body.input[1]).toEqual(firstHistory[0]);
     expect(body.input[0]?.content).toContain('datos no confiables');
-    expect(body.input.at(-1)?.content).toContain('ownerId');
+    expect(body.input[0]?.content).toContain('ownerId');
+    expect(body.input.at(-1)?.content).not.toContain('ownerId');
+    expect(body.input.at(-1)?.content).toContain('El segundo');
   });
 
   it('retorna null si no hay contexto', async () => {

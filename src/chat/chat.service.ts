@@ -22,6 +22,7 @@ import { KnowledgeContextItem } from './chat.types';
 import { FaqService } from './faq.service';
 import { KnowledgeService } from './knowledge.service';
 import { OpenAiService } from './openai.service';
+import { recordChatMetric } from './chat-metrics';
 
 @Injectable()
 export class ChatService {
@@ -38,6 +39,28 @@ export class ChatService {
   }
 
   async reply(dto: ChatRequestDto): Promise<ChatResponseDto> {
+    const startedAt = performance.now();
+    try {
+      const response = await this.buildReply(dto);
+      recordChatMetric({
+        event: 'chat_reply',
+        outcome: this.isOutOfScopeQuestion(dto.message)
+          ? 'out_of_scope'
+          : response.source,
+        durationMs: performance.now() - startedAt,
+      });
+      return response;
+    } catch (error) {
+      recordChatMetric({
+        event: 'chat_reply',
+        outcome: 'error',
+        durationMs: performance.now() - startedAt,
+      });
+      throw error;
+    }
+  }
+
+  private async buildReply(dto: ChatRequestDto): Promise<ChatResponseDto> {
     if (this.isOutOfScopeQuestion(dto.message)) {
       const outOfScopeResponse = await this.buildSystemResponse(
         'out_of_scope',
@@ -98,17 +121,21 @@ export class ChatService {
       userMessage: dto.message,
       contextItems,
       history,
-      suggestedSeedQuestions: await this.getSystemSuggestedQuestions(
-        'ai_seed',
-        CHAT_DEFAULT_AI_SEED_QUESTIONS,
-      ),
+      suggestedSeedQuestions: contextItems[0]
+        ? this.buildContextualSuggestions(contextItems[0])
+        : await this.getSystemSuggestedQuestions(
+            'ai_seed',
+            CHAT_DEFAULT_AI_SEED_QUESTIONS,
+          ),
     });
 
     if (aiResponse && aiResponse.answer) {
-      const aiFallbackSuggestions = await this.getSystemSuggestedQuestions(
-        'ai_fallback',
-        CHAT_DEFAULT_AI_FALLBACK_SUGGESTIONS,
-      );
+      const aiFallbackSuggestions = contextItems[0]
+        ? this.buildContextualSuggestions(contextItems[0])
+        : await this.getSystemSuggestedQuestions(
+            'ai_fallback',
+            CHAT_DEFAULT_AI_FALLBACK_SUGGESTIONS,
+          );
       const response: ChatResponseDto = {
         answer: aiResponse.answer,
         suggestedQuestions: this.mergeSuggestions(
@@ -169,6 +196,31 @@ export class ChatService {
   }
 
   private buildContextualSuggestions(item: KnowledgeContextItem): string[] {
+    const professionalSuggestions: Record<string, readonly string[]> = {
+      'main-experience': [
+        '¿Qué tecnologías usás en Comafi?',
+        '¿Qué hacés en el área de Fondos Comunes de Inversión?',
+      ],
+      'main-databases': [
+        '¿Qué experiencia tenés con AWS?',
+        '¿Qué tecnologías usás en Comafi?',
+      ],
+      'main-aws': [
+        '¿Con qué bases de datos trabajás?',
+        '¿Qué tecnologías usás en Comafi?',
+      ],
+      'main-stack': [
+        '¿Dónde trabajás actualmente?',
+        '¿Con qué bases de datos trabajás?',
+      ],
+    };
+    const profileSuggestions =
+      item.sourceType === 'profile' && item.sourceId
+        ? professionalSuggestions[item.sourceId]
+        : undefined;
+    if (profileSuggestions) {
+      return [...profileSuggestions];
+    }
     const suggestionsBySource: Record<
       KnowledgeContextItem['sourceType'],
       readonly string[]

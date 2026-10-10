@@ -113,6 +113,35 @@ describe('ChatService', () => {
     expect(result.answer).toContain('Play Store');
   });
 
+  it('usa sugerencias laborales en lugar de preguntas sobre un proyecto inexistente', async () => {
+    faqServiceMock.findBestMatch.mockResolvedValue(null);
+    knowledgeServiceMock.getRelevantContext.mockResolvedValue([
+      {
+        sourceType: 'profile',
+        sourceId: 'main-experience',
+        title: 'Experiencia laboral',
+        text: 'Trabajo en Banco Comafi a través de Boreal IT.',
+      },
+    ]);
+    openAiServiceMock.generateChatResponse.mockResolvedValue({
+      answer: 'Trabajo en Banco Comafi.',
+      suggestedQuestions: [],
+    });
+    const result = await service.reply({ message: '¿No trabaja en Comafi?' });
+    expect(openAiServiceMock.generateChatResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        suggestedSeedQuestions: [
+          '¿Qué tecnologías usás en Comafi?',
+          '¿Qué hacés en el área de Fondos Comunes de Inversión?',
+        ],
+      }),
+    );
+    expect(result.suggestedQuestions).toEqual([
+      '¿Qué tecnologías usás en Comafi?',
+      '¿Qué hacés en el área de Fondos Comunes de Inversión?',
+    ]);
+  });
+
   it('cae en fallback si AI no responde', async () => {
     faqServiceMock.findBestMatch.mockResolvedValue(null);
     knowledgeServiceMock.getRelevantContext.mockResolvedValue([]);
