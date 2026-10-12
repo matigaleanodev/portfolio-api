@@ -23,6 +23,7 @@ env:
 jobs:
   build-push-deploy:
     if: github.ref == 'refs/heads/main'
+    timeout-minutes: 30
     runs-on: ubuntu-latest
 
     steps:
@@ -53,6 +54,7 @@ jobs:
         with:
           aws-region: ${{ vars.AWS_REGION }}
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          allowed-account-ids: '650387442642'
           role-session-name: GitHubActions-${{ github.run_id }}
 
       - name: Deploy on EC2 through Systems Manager
