@@ -54,7 +54,7 @@ Endpoints públicos actuales:
 - La API no debe servir contenido editorial estático.
 - Los posts del blog y los proyectos siguen siendo ownership de `portfolio`.
 - La persistencia de suscriptores y la automatización post-publicación siguen siendo ownership de `portfolio-cloud`.
-- El chat carga el knowledge editorial canónico desde cloud para proyectos y publicaciones; las consultas exclusivamente profesionales conocidas usan el perfil local sin depender de R2. Ver [auditoría del asistente](docs/assistant-profile-audit.es.md) para historial, evaluación real y métricas sin texto de visitantes.
+- El chat carga el knowledge editorial canónico desde cloud para proyectos y publicaciones; las consultas exclusivamente profesionales conocidas usan el perfil local sin depender de R2.
 
 ---
 
