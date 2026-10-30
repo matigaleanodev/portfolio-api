@@ -54,7 +54,7 @@ Current public endpoints:
 - The API must not serve static editorial content.
 - Blog posts and projects remain owned by `portfolio`.
 - Subscription persistence and post-publication automation remain owned by `portfolio-cloud`.
-- Chat loads canonical cloud editorial knowledge for projects and posts; known exclusively professional questions use the local profile without depending on R2. See the [assistant audit](docs/assistant-profile-audit.md) for bounded history, real-model evaluation and text-free operational metrics.
+- Chat loads canonical cloud editorial knowledge for projects and posts; known exclusively professional questions use the local profile without depending on R2.
 
 ---
 
